@@ -1,0 +1,40 @@
+# Copy to `.dev.vars` for local development:  copy .dev.vars.example .dev.vars
+#
+# `.dev.vars` is gitignored (see .gitignore). Never commit real keys.
+#
+# For a deployed Worker, set these with `wrangler secret put <NAME>` instead.
+# Nothing in this file is ever read by the app at runtime except by Wrangler.
+
+# development | production | test
+ENVIRONMENT=development
+
+# HS256 signing key for session JWTs. Minimum 32 characters.
+# Generate one:  openssl rand -hex 48
+#                or in PowerShell:
+#                $b = New-Object 'System.Byte[]' 48
+#                (New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($b)
+#                -join ($b | % { $_.ToString('x2') })
+JWT_SECRET=replace-me-with-at-least-32-random-characters
+
+# Bearer token protecting POST /api/admin/seed. Minimum 16 characters.
+# Generate one:  openssl rand -hex 24
+ADMIN_TOKEN=replace-me-with-at-least-16-random-chars
+
+# --- AI providers (server-side only) -----------------------------------------
+# Tried in order: Gemini -> Groq -> OpenRouter. Providers with no key are
+# skipped. These keys never leave the Worker and are never returned to the app.
+#
+# Extra Gemini keys are used as rotation targets when the primary is rate
+# limited (the free tier limits requests per minute per key).
+GEMINI_API_KEY=
+GEMINI_API_KEY_2=
+GEMINI_API_KEY_3=
+
+# First fallback. https://console.groq.com/keys
+GROQ_API_KEY=
+
+# Second fallback. https://openrouter.ai/keys
+OPENROUTER_API_KEY=
+
+# Optional: override the Gemini model. Default is gemini-2.5-flash.
+# AI_MODEL=gemini-2.5-flash

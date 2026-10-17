@@ -1,0 +1,71 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "greenbiz",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-06",
+	"compatibility_flags": [
+		"global_fetch_strictly_public",
+		// Required by bcryptjs (uses node:crypto primitives internally).
+		"nodejs_compat"
+	],
+	"assets": {
+		// The path to the directory containing the `index.html` file to be served at `/`
+		"directory": "./public"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"d1_databases": [
+		{
+			// Binding name is `DB` so it surfaces on `env.DB` (D1Database) in the Worker.
+			"binding": "DB",
+			"database_name": "greenbiz_db",
+			"database_id": "a701cd0e-0bd4-4af8-8a42-ca9d0187454e",
+			// Drizzle Kit writes migrations to src/db/migrations; Wrangler applies
+			// them to D1. Keeping the path explicit means the migrations live next
+			// to the schema they describe.
+			"migrations_dir": "src/db/migrations",
+			// Local-first: `wrangler dev` uses a local SQLite file under .wrangler/state.
+			// Flip to `"remote": true` to point dev at the real D1 database.
+			"remote": false
+		}
+	],
+	"vars": {
+		"ENVIRONMENT": "development"
+	},
+	// Secrets are NOT stored here. Set them with:
+	//   wrangler secret put JWT_SECRET
+	//   wrangler secret put GEMINI_API_KEY
+	//   wrangler secret put GROQ_API_KEY
+	//   wrangler secret put OPENROUTER_API_KEY
+	//   wrangler secret put ADMIN_TOKEN
+	// For local dev, copy .dev.vars.example to .dev.vars and fill it in.
+	/**
+	 * Smart Placement
+	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
+	 */
+	// "placement": {  "mode": "smart" }
+	/**
+	 * Bindings
+	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
+	 * databases, object storage, AI inference, real-time communication and more.
+	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+	 */
+	/**
+	 * Environment Variables
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+	 * Note: Use secrets to store sensitive data.
+	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 */
+	// "vars": {  "MY_VARIABLE": "production_value" }
+	/**
+	 * Service Bindings (communicate between multiple Workers)
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
+	 */
+	// "services": [  {   "binding": "MY_SERVICE",   "service": "my-service"  } ]
+}

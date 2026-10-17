@@ -1,0 +1,1180 @@
+[
+    {
+        "id": "22222222-2222-4222-8222-000000000001",
+        "institutionId": "11111111-1111-4111-8111-000000000001",
+        "planName": "Anonno (Mortgage-Free Loan)",
+        "serviceType": "loan",
+        "description": "Mortgage-free term loan for working capital or fixed assets, with a single-instalment option for seasonal businesses. The published 5.00% rate is the women-entrepreneur rate.",
+        "minAmountMinor": 50000000,
+        "maxAmountMinor": 500000000,
+        "interestRateMin": 5.0,
+        "interestRateMax": null,
+        "durationMonths": 48,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "No mortgage; guarantor, post-dated cheques and cash collateral required",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 18,
+            "maxAgeYears": 70,
+            "requiresTradeLicence": true,
+            "other": "Loan up to 70% of net assets; proprietorship, partnership or private limited company. Business age 3 years for loans above BDT 35 lac."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "5.00% women-entrepreneur rate; standard rate not stated",
+            "other": "Single instalment option for seasonal businesses"
+        },
+        "sourceUrl": "https://www.bracbank.com/sme-banking/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000002",
+        "institutionId": "11111111-1111-4111-8111-000000000001",
+        "planName": "Druti",
+        "serviceType": "loan",
+        "description": "Relationship-based SME facility for established traders and manufacturers, priced case by case.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": null,
+        "interestRateMax": null,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": null,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": 24,
+            "other": "Minimum 2 years' experience in the same line (1 year for women); sole proprietorship and partnership; sufficient cash flow and profit."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 48,
+            "rateNote": "Rate not published; set by the bank",
+            "other": "Amount and tenor not published"
+        },
+        "sourceUrl": "https://www.bracbank.com/sme-banking/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000003",
+        "institutionId": "11111111-1111-4111-8111-000000000001",
+        "planName": "Tara Uddokta",
+        "serviceType": "loan",
+        "description": "Dedicated SME loan for women-led businesses, unsecured up to BDT 2 crore, with TARA SME desks and partner discounts.",
+        "minAmountMinor": 50000000,
+        "maxAmountMinor": 2000000000,
+        "interestRateMin": 5.0,
+        "interestRateMax": null,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "Unsecured up to BDT 2 crore",
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": 12,
+            "womenOwned": true,
+            "requiresTradeLicence": true,
+            "other": "Valid trade licence; operating at least 1 year; at least 51% female ownership."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 48,
+            "rateNote": "5.00% up to BDT 1 crore; above that not stated",
+            "other": "Amount starts at BDT 5 lac"
+        },
+        "sourceUrl": "https://www.bracbank.com/sme-banking/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000004",
+        "institutionId": "11111111-1111-4111-8111-000000000001",
+        "planName": "Startup Builder",
+        "serviceType": "loan",
+        "description": "Term loan or overdraft for startups and new ventures, up to BDT 1 crore without mortgage under the Bangladesh Bank Startup Financing Policy.",
+        "minAmountMinor": 50000000,
+        "maxAmountMinor": 5000000000,
+        "interestRateMin": 4.0,
+        "interestRateMax": 4.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "No mortgage up to BDT 1 crore",
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null,
+            "minAgeYears": 21,
+            "maxAgeYears": 45,
+            "other": "Bangladeshi by birth; proven business model and revenue; no crypto or alternative tender businesses."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 60,
+            "rateNote": "Exclusive rate under the Bangladesh Bank Startup Financing Policy; 4.00% used for estimates",
+            "other": "Term loan and overdraft formats"
+        },
+        "sourceUrl": "https://www.bracbank.com/sme-banking/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000005",
+        "institutionId": "11111111-1111-4111-8111-000000000002",
+        "planName": "Sonali Bank SME Loan (general)",
+        "serviceType": "loan",
+        "description": "General SME loan for working capital or a project, with collateral-free limits up to BDT 5 lac for men and BDT 25 lac for women.",
+        "minAmountMinor": 5000000,
+        "maxAmountMinor": 100000000000,
+        "interestRateMin": 7.0,
+        "interestRateMax": 10.0,
+        "durationMonths": 84,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "Collateral-free up to BDT 5 lac (men) / BDT 25 lac (women); collateral above that",
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null,
+            "minAgeYears": 18,
+            "requiresTradeLicence": true,
+            "other": "Bangladeshi; valid trade/business registration; no defaulted loans and clean CIB; basic business records and sales proof; NID and photographs."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "7.00%–10.00% p.a.",
+            "other": "Project loans up to 7 years; working capital renewed yearly"
+        },
+        "sourceUrl": "https://www.sonalibank.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000006",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Utkorsho",
+        "serviceType": "loan",
+        "description": "Unsecured term loan for fixed assets or working capital for established small and medium businesses.",
+        "minAmountMinor": 300000000,
+        "maxAmountMinor": 1500000000,
+        "interestRateMin": 13.5,
+        "interestRateMax": 15.0,
+        "durationMonths": 48,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "guarantorsRequired": 2,
+            "minBusinessAgeMonths": 48,
+            "minAgeYears": 25,
+            "maxAgeYears": 60,
+            "requiresBankTransactions": true,
+            "other": "Business age 4–5 years; EMI / term facility."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "13.50%–15.00% p.a.",
+            "other": null
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000007",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Startup",
+        "serviceType": "loan",
+        "description": "Subsidised startup loan for innovation and new product development, at 4.00%–5.00% under the scheme or 12.50%–14.50% standard.",
+        "minAmountMinor": 20000000,
+        "maxAmountMinor": 1000000000,
+        "interestRateMin": 4.0,
+        "interestRateMax": 14.5,
+        "durationMonths": 60,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "guarantorsRequired": 2,
+            "minBusinessAgeMonths": null,
+            "minAgeYears": 21,
+            "maxAgeYears": 45,
+            "other": "No minimum business age; no bank transactions required."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "4.00%–5.00% subsidised / 12.50%–14.50% standard",
+            "other": "EMI / term facility"
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000008",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Mukti (Women)",
+        "serviceType": "loan",
+        "description": "Loan tailored for women entrepreneurs, usable for any business purpose.",
+        "minAmountMinor": 10000000,
+        "maxAmountMinor": 1000000000,
+        "interestRateMin": 5.0,
+        "interestRateMax": 13.5,
+        "durationMonths": 60,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "guarantorsRequired": 2,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 21,
+            "maxAgeYears": 65,
+            "womenOwned": true,
+            "other": "No bank transactions required up to BDT 30 lac."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "5.00%–7.00% subsidised / 12.00%–13.50% standard",
+            "other": null
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000009",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Uddipon",
+        "serviceType": "loan",
+        "description": "Mortgage-backed loan to buy, build or renovate commercial or residential space.",
+        "minAmountMinor": 100000000,
+        "maxAmountMinor": 25000000000,
+        "interestRateMin": 12.0,
+        "interestRateMax": 13.5,
+        "durationMonths": 240,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Registered mortgage on land/building",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": null,
+            "minAgeYears": 21,
+            "maxAgeYears": 60,
+            "other": "Bank transactions not required for rental income."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "12.00%–13.50% p.a.",
+            "other": null
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000010",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Fleet Financing",
+        "serviceType": "loan",
+        "description": "Financing for new or reconditioned commercial vehicles and vessels, unsecured up to BDT 5 crore.",
+        "minAmountMinor": 50000000,
+        "maxAmountMinor": 10000000000,
+        "interestRateMin": 12.5,
+        "interestRateMax": 14.0,
+        "durationMonths": 84,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "Not required up to BDT 5 crore",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 36,
+            "minAgeYears": 21,
+            "maxAgeYears": 65,
+            "requiresBankTransactions": true,
+            "other": "Business age 3–4 years."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "12.50%–14.00% p.a.",
+            "other": null
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000011",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Krishi Loan",
+        "serviceType": "loan",
+        "description": "Crop-cultivation loan repaid in a single bullet instalment after harvest.",
+        "minAmountMinor": 1000000,
+        "maxAmountMinor": 15000000,
+        "interestRateMin": 8.0,
+        "interestRateMax": 9.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 12,
+            "minAgeYears": 21,
+            "maxAgeYears": 65,
+            "other": "At least 1 year of farming experience; direct crop cultivation."
+        },
+        "feesDetails": {
+            "facility": "bullet",
+            "processingFeePct": null,
+            "assumedTenorMonths": 12,
+            "rateNote": "8.00%–9.00% p.a.",
+            "other": "Single-shot or revolving; bullet payment upon harvest"
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000012",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Asha",
+        "serviceType": "loan",
+        "description": "Unsecured term loan for working capital and fixed assets, repaid by EMI.",
+        "minAmountMinor": 20000000,
+        "maxAmountMinor": 200000000,
+        "interestRateMin": 13.0,
+        "interestRateMax": 14.5,
+        "durationMonths": 48,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "guarantorsRequired": 2,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 21,
+            "maxAgeYears": 65,
+            "other": "No bank transactions required."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "13.00%–14.50% p.a.",
+            "other": null
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000013",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Cash Credit",
+        "serviceType": "working_capital",
+        "description": "Revolving cash-credit line for working capital and operating expenses, renewed yearly.",
+        "minAmountMinor": 300000000,
+        "maxAmountMinor": 10000000000,
+        "interestRateMin": 12.0,
+        "interestRateMax": 13.5,
+        "durationMonths": 12,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Registered mortgage on land/building",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 36,
+            "minAgeYears": 25,
+            "maxAgeYears": 65
+        },
+        "feesDetails": {
+            "facility": "revolving",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "12.00%–13.50% p.a.",
+            "other": "Revolving line of credit; interest-only estimate shown"
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000014",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL Business Solution",
+        "serviceType": "loan",
+        "description": "Term facility for capital machinery purchase and working capital.",
+        "minAmountMinor": 300000000,
+        "maxAmountMinor": 10000000000,
+        "interestRateMin": 12.0,
+        "interestRateMax": 13.5,
+        "durationMonths": 60,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Registered mortgage on land/building",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 36,
+            "minAgeYears": 25,
+            "maxAgeYears": 65,
+            "requiresBankTransactions": true
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "12.00%–13.50% p.a.",
+            "other": "EMI / term facility"
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000015",
+        "institutionId": "11111111-1111-4111-8111-000000000003",
+        "planName": "EBL E-Loan / E-Cash",
+        "serviceType": "working_capital",
+        "description": "Cash-collateral-backed overdraft or term loan secured by an EBL deposit; no business experience or guarantors required.",
+        "minAmountMinor": 10000000,
+        "maxAmountMinor": 25000000000,
+        "interestRateMin": null,
+        "interestRateMax": null,
+        "durationMonths": 60,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "Backed by EBL cash/deposit",
+            "guarantorsRequired": 0,
+            "minBusinessAgeMonths": null,
+            "minAgeYears": 18,
+            "maxAgeYears": 70,
+            "other": "No business experience, income or bank transactions required."
+        },
+        "feesDetails": {
+            "facility": "revolving",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "FD rate + 3.00%",
+            "other": "Overdraft or term loan against deposit"
+        },
+        "sourceUrl": "https://www.ebl.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000016",
+        "institutionId": "11111111-1111-4111-8111-000000000004",
+        "planName": "DBBL Cash Credit (CC)",
+        "serviceType": "working_capital",
+        "description": "Working-capital cash credit for cottage, small and medium trading/service businesses, with no processing fee.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 50000000000,
+        "interestRateMin": 7.0,
+        "interestRateMax": 7.5,
+        "durationMonths": 12,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Mortgage at least 1.5× the loan",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 3,
+            "minAgeYears": 21,
+            "maxAgeYears": 65,
+            "other": "Sole proprietorship, partnership or private limited; renewal allowed up to age 70; 7.00% takeover rate, 7.50% new. Cottage trading up to BDT 50 lac, small trading/service up to BDT 5 crore, medium service up to BDT 50 crore."
+        },
+        "feesDetails": {
+            "facility": "revolving",
+            "processingFeePct": 0,
+            "assumedTenorMonths": null,
+            "rateNote": "7.00% takeover / 7.50% new",
+            "other": "No processing fee; interest-only estimate shown"
+        },
+        "sourceUrl": "https://www.dutchbanglabank.com/sme-banking.html",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000017",
+        "institutionId": "11111111-1111-4111-8111-000000000004",
+        "planName": "DBBL Term Loan (TL)",
+        "serviceType": "loan",
+        "description": "Term loan for machinery and fixed assets across cottage, small and medium manufacturing.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 75000000000,
+        "interestRateMin": 7.0,
+        "interestRateMax": 7.5,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Mortgage at least 1.5× the loan",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 3,
+            "minAgeYears": 21,
+            "maxAgeYears": 70,
+            "other": "Cottage manufacturing up to BDT 15 lac; small manufacturing up to BDT 20 crore; medium manufacturing up to BDT 75 crore."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": 0,
+            "assumedTenorMonths": 60,
+            "rateNote": "7.00% takeover / 7.50% new",
+            "other": "No processing fee"
+        },
+        "sourceUrl": "https://www.dutchbanglabank.com/sme-banking.html",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000018",
+        "institutionId": "11111111-1111-4111-8111-000000000004",
+        "planName": "DBBL Property Loan Janala",
+        "serviceType": "loan",
+        "description": "Property loan for purchasing, constructing or renovating a house, flat or commercial space.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": 7.0,
+        "interestRateMax": 7.5,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Collateral at least 1.5× the loan",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": null,
+            "minMonthlyRevenueMinor": 3000000,
+            "other": "Based on valuation and SME limits; minimum monthly income BDT 30,000."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 60,
+            "rateNote": "7.00% takeover / 7.50% new",
+            "other": null
+        },
+        "sourceUrl": "https://www.dutchbanglabank.com/sme-banking.html",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000019",
+        "institutionId": "11111111-1111-4111-8111-000000000004",
+        "planName": "DBBL Demand Loan (Festival Loan)",
+        "serviceType": "loan",
+        "description": "Short-term seasonal demand loan for festival stock and other temporary working-capital needs.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": 7.0,
+        "interestRateMax": 7.5,
+        "durationMonths": 12,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Mortgage at least 1.5× the loan",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 3,
+            "minAgeYears": 21,
+            "maxAgeYears": 70
+        },
+        "feesDetails": {
+            "facility": "interest_only",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "7.00% takeover / 7.50% new",
+            "other": "Interest-only estimate; principal repaid at maturity"
+        },
+        "sourceUrl": "https://www.dutchbanglabank.com/sme-banking.html",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000020",
+        "institutionId": "11111111-1111-4111-8111-000000000004",
+        "planName": "DBBL Uthsaho (Women Term Loan)",
+        "serviceType": "loan",
+        "description": "Term financing for women-led businesses, with no processing fee.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 500000000,
+        "interestRateMin": 7.5,
+        "interestRateMax": 7.5,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Mortgage at least 1.5× the loan",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": null,
+            "womenOwned": true,
+            "other": "Women-led sole proprietorship, partnership or private limited company."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": 0,
+            "assumedTenorMonths": 48,
+            "rateNote": "7.50% p.a.",
+            "other": "No processing fee"
+        },
+        "sourceUrl": "https://www.dutchbanglabank.com/sme-banking.html",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000021",
+        "institutionId": "11111111-1111-4111-8111-000000000004",
+        "planName": "DBBL Shofolota (Women Cash Credit)",
+        "serviceType": "working_capital",
+        "description": "Working-capital cash credit for women-led businesses, with no processing fee.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 500000000,
+        "interestRateMin": 7.5,
+        "interestRateMax": 7.5,
+        "durationMonths": 12,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Mortgage at least 1.5× the loan",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": null,
+            "womenOwned": true,
+            "other": "Women-led sole proprietorship, partnership or private limited company."
+        },
+        "feesDetails": {
+            "facility": "revolving",
+            "processingFeePct": 0,
+            "assumedTenorMonths": null,
+            "rateNote": "7.50% p.a.",
+            "other": "No processing fee; interest-only estimate shown"
+        },
+        "sourceUrl": "https://www.dutchbanglabank.com/sme-banking.html",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000022",
+        "institutionId": "11111111-1111-4111-8111-000000000004",
+        "planName": "DBBL Unnoyan (SMEDP-2 Term Loan)",
+        "serviceType": "loan",
+        "description": "Long-term project and asset acquisition loan under the Bangladesh Bank SMEDP-2 scheme, for businesses outside Dhaka and Chattogram metro.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 5000000000,
+        "interestRateMin": 6.0,
+        "interestRateMax": 6.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Mortgage at least 1.5× the loan",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": null,
+            "other": "Business must be outside Dhaka and Chattogram metro; not available for takeovers."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": 0,
+            "assumedTenorMonths": 60,
+            "rateNote": "6.00% p.a. under SMEDP-2",
+            "other": "No processing fee"
+        },
+        "sourceUrl": "https://www.dutchbanglabank.com/sme-banking.html",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000023",
+        "institutionId": "11111111-1111-4111-8111-000000000004",
+        "planName": "DBBL Utpadon (SMEDP-2 Cash Credit)",
+        "serviceType": "working_capital",
+        "description": "Working-capital cash credit under the Bangladesh Bank SMEDP-2 scheme, for businesses outside Dhaka and Chattogram metro.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 5000000000,
+        "interestRateMin": 6.0,
+        "interestRateMax": 6.0,
+        "durationMonths": 12,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Mortgage at least 1.5× the loan",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": null,
+            "other": "Business must be outside Dhaka and Chattogram metro; not available for takeovers."
+        },
+        "feesDetails": {
+            "facility": "revolving",
+            "processingFeePct": 0,
+            "assumedTenorMonths": null,
+            "rateNote": "6.00% p.a. under SMEDP-2",
+            "other": "No processing fee; interest-only estimate shown"
+        },
+        "sourceUrl": "https://www.dutchbanglabank.com/sme-banking.html",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000024",
+        "institutionId": "11111111-1111-4111-8111-000000000005",
+        "planName": "Jamuna Bonik",
+        "serviceType": "working_capital",
+        "description": "Import letter of credit and post-import finance (PIF) for trading businesses.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 8000000000,
+        "interestRateMin": null,
+        "interestRateMax": null,
+        "durationMonths": 12,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Standard SME collateral",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 25,
+            "maxAgeYears": 65,
+            "requiresTradeLicence": true,
+            "other": "At least 2 years' experience; relevant documents required."
+        },
+        "feesDetails": {
+            "facility": "revolving",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "Competitive market rate; not published",
+            "other": "Import LC and PIF"
+        },
+        "sourceUrl": "https://jamunabankbd.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000025",
+        "institutionId": "11111111-1111-4111-8111-000000000005",
+        "planName": "Jamuna Chalantika",
+        "serviceType": "loan",
+        "description": "Working-capital and operational loan with a cash-credit option or a term loan of up to 60 months.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 5000000000,
+        "interestRateMin": null,
+        "interestRateMax": null,
+        "durationMonths": 60,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Collateral required",
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 25,
+            "maxAgeYears": 65,
+            "requiresTradeLicence": true,
+            "other": "At least 2 years' experience; up-to-date trade licence and financials."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "Market rate; not published",
+            "other": "Cash credit 12 months or term loan up to 60 months"
+        },
+        "sourceUrl": "https://jamunabankbd.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000026",
+        "institutionId": "11111111-1111-4111-8111-000000000005",
+        "planName": "Jamuna SOD (General) under SME",
+        "serviceType": "working_capital",
+        "description": "Secured overdraft for working capital, renewable every 12 months.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 10000000000,
+        "interestRateMin": null,
+        "interestRateMax": null,
+        "durationMonths": 12,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "Collateral required",
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 25,
+            "maxAgeYears": 65,
+            "other": "At least 2 years' experience; relevant documents required."
+        },
+        "feesDetails": {
+            "facility": "revolving",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "Market rate; not published",
+            "other": "Interest-only estimate shown"
+        },
+        "sourceUrl": "https://jamunabankbd.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000027",
+        "institutionId": "11111111-1111-4111-8111-000000000005",
+        "planName": "Jamuna Shachchondo",
+        "serviceType": "loan",
+        "description": "Loan for any justifiable business purpose, secured by 25% cash collateral.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 500000000,
+        "interestRateMin": null,
+        "interestRateMax": null,
+        "durationMonths": 48,
+        "eligibilityCriteria": {
+            "requiresCollateral": true,
+            "collateralNote": "25% cash collateral",
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 25,
+            "maxAgeYears": 65,
+            "other": "At least 2 years' experience; relevant documents required."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "Market rate; not published",
+            "other": "SOD 12 months or term loan up to 48 months"
+        },
+        "sourceUrl": "https://jamunabankbd.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000028",
+        "institutionId": "11111111-1111-4111-8111-000000000005",
+        "planName": "Jamuna Startup",
+        "serviceType": "loan",
+        "description": "Concessionary startup loan for new projects, working capital, machinery or software purchase.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 1000000000,
+        "interestRateMin": 4.0,
+        "interestRateMax": 4.0,
+        "durationMonths": 60,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "Personal guarantee or original education certificate",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 21,
+            "maxAgeYears": 45,
+            "other": "At least 2 years' experience; relevant documents required."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "4.00% concessionary rate",
+            "other": "EMI"
+        },
+        "sourceUrl": "https://jamunabankbd.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000029",
+        "institutionId": "11111111-1111-4111-8111-000000000005",
+        "planName": "Jamuna Prefinance Facility (CMSME)",
+        "serviceType": "loan",
+        "description": "Prefinance for working capital or a justifiable business purpose, with a revolving option up to 12 months or a term loan up to 60 months.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 500000000,
+        "interestRateMin": 5.0,
+        "interestRateMax": 7.0,
+        "durationMonths": 60,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "Personal guarantee or original education certificate",
+            "guarantorsRequired": 1,
+            "minBusinessAgeMonths": 24,
+            "minAgeYears": 25,
+            "maxAgeYears": 65,
+            "other": "At least 2 years' experience; relevant documents required."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "5.00%–7.00% by sub-scheme tier",
+            "other": "Up to 12 months revolving or term loan up to 60 months"
+        },
+        "sourceUrl": "https://jamunabankbd.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000030",
+        "institutionId": "11111111-1111-4111-8111-000000000006",
+        "planName": "Dhaka Bank CMSME General Term Loan",
+        "serviceType": "loan",
+        "description": "General CMSME term loan; amount, rate and tenor are set by the bank.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": null,
+        "interestRateMax": null,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": null,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 60,
+            "rateNote": "Standard commercial rate; not published",
+            "other": null
+        },
+        "sourceUrl": "https://www.dhakabank.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000031",
+        "institutionId": "11111111-1111-4111-8111-000000000006",
+        "planName": "Dhaka Bank CMSME Woman Entrepreneur Loan",
+        "serviceType": "loan",
+        "description": "Loan exclusively for women entrepreneurs under the Bangladesh Bank refinance scheme, at 5.00% flat.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": 5.0,
+        "interestRateMax": 5.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": null,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null,
+            "womenOwned": true,
+            "other": "Exclusively for women entrepreneurs."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 60,
+            "rateNote": "5.00% flat under the Bangladesh Bank refinance scheme",
+            "other": null
+        },
+        "sourceUrl": "https://www.dhakabank.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000032",
+        "institutionId": "11111111-1111-4111-8111-000000000007",
+        "planName": "Prime Startup",
+        "serviceType": "loan",
+        "description": "Startup financing for innovative, scalable and commercially sustainable new businesses under the Bangladesh Bank policy.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 8000000000,
+        "interestRateMin": 4.0,
+        "interestRateMax": 4.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": null,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null,
+            "minAgeYears": 21,
+            "maxAgeYears": 60,
+            "other": "Bangladeshi; innovative, scalable and commercially sustainable new business."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 60,
+            "rateNote": "4.00% under the Bangladesh Bank Startup Financing Policy",
+            "other": "Working capital, new projects, machinery or software purchase"
+        },
+        "sourceUrl": "https://www.primebank.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000033",
+        "institutionId": "11111111-1111-4111-8111-000000000007",
+        "planName": "Prime Chalti",
+        "serviceType": "loan",
+        "description": "Working-capital, expansion and fixed-asset loan for cottage, micro, small and medium enterprises.",
+        "minAmountMinor": 100000000,
+        "maxAmountMinor": 10000000000,
+        "interestRateMin": 13.0,
+        "interestRateMax": 14.0,
+        "durationMonths": 60,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "Hypothecation and personal guarantees; mortgage above BDT 50 lac–1 crore",
+            "guarantorsRequired": 2,
+            "minBusinessAgeMonths": 12,
+            "requiresTradeLicence": true,
+            "other": "Valid trade licence; 1–2 years' track record."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "13.00%–14.00% p.a.",
+            "other": null
+        },
+        "sourceUrl": "https://www.primebank.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000034",
+        "institutionId": "11111111-1111-4111-8111-000000000007",
+        "planName": "Prime Sheba / Supplier / Work Order Financing",
+        "serviceType": "working_capital",
+        "description": "Financing against work orders, invoices and supply-chain receivables for service providers, suppliers and contractors.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": 13.0,
+        "interestRateMax": 14.0,
+        "durationMonths": 12,
+        "eligibilityCriteria": {
+            "requiresCollateral": null,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": 12,
+            "other": "Valid work orders or invoices; 1–2 years' experience; up to 70%–80% of order execution cost."
+        },
+        "feesDetails": {
+            "facility": "interest_only",
+            "processingFeePct": null,
+            "assumedTenorMonths": null,
+            "rateNote": "13.00%–14.00% p.a.",
+            "other": "Financing against work orders and invoices"
+        },
+        "sourceUrl": "https://www.primebank.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000035",
+        "institutionId": "11111111-1111-4111-8111-000000000007",
+        "planName": "Prime Anchol (Refinance)",
+        "serviceType": "loan",
+        "description": "Refinance-backed loan for working capital, expansion or fixed assets; collateral-free up to BDT 50 lac.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 1500000000,
+        "interestRateMin": 5.0,
+        "interestRateMax": 5.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "collateralNote": "Collateral-free up to BDT 50 lac",
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": 12,
+            "minAgeYears": 21,
+            "maxAgeYears": 70,
+            "other": "1–2 years' management experience; available upon refinance approval."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 48,
+            "rateNote": "5.00% upon refinance approval",
+            "other": null
+        },
+        "sourceUrl": "https://www.primebank.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000036",
+        "institutionId": "11111111-1111-4111-8111-000000000007",
+        "planName": "Prime Neera (Women)",
+        "serviceType": "loan",
+        "description": "Unsecured EMI term financing and working capital for women professionals and entrepreneurs.",
+        "minAmountMinor": null,
+        "maxAmountMinor": 400000000,
+        "interestRateMin": 7.0,
+        "interestRateMax": 8.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": false,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null,
+            "minAgeYears": 22,
+            "maxAgeYears": 65,
+            "womenOwned": true,
+            "other": "Prime Women Savings Account holder."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 48,
+            "rateNote": "7.00%–8.00% special variable rate",
+            "other": "Unsecured EMI term financing"
+        },
+        "sourceUrl": "https://www.primebank.com.bd/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000037",
+        "institutionId": "11111111-1111-4111-8111-000000000008",
+        "planName": "City Bank Startup Loan",
+        "serviceType": "loan",
+        "description": "Startup loan supported by central-bank refinance at 4.00%.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": 4.0,
+        "interestRateMax": 4.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": null,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 60,
+            "rateNote": "4.00% under central bank refinance",
+            "other": null
+        },
+        "sourceUrl": "https://www.citybankplc.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000038",
+        "institutionId": "11111111-1111-4111-8111-000000000008",
+        "planName": "City Alo Women Entrepreneurs Loan",
+        "serviceType": "loan",
+        "description": "Loan programme for eligible women entrepreneurs at 5.00%.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": 5.0,
+        "interestRateMax": 5.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": null,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null,
+            "womenOwned": true,
+            "other": "Eligible women entrepreneurs."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 48,
+            "rateNote": "5.00% p.a.",
+            "other": null
+        },
+        "sourceUrl": "https://www.citybankplc.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    },
+    {
+        "id": "22222222-2222-4222-8222-000000000039",
+        "institutionId": "11111111-1111-4111-8111-000000000008",
+        "planName": "City Bank Small Business Loan / Distributor Finance",
+        "serviceType": "loan",
+        "description": "Secured and unsecured small business loans, including distributor finance, at 13.50%–15.00%.",
+        "minAmountMinor": null,
+        "maxAmountMinor": null,
+        "interestRateMin": 13.5,
+        "interestRateMax": 15.0,
+        "durationMonths": null,
+        "eligibilityCriteria": {
+            "requiresCollateral": null,
+            "guarantorsRequired": null,
+            "minBusinessAgeMonths": null,
+            "other": "Secured and unsecured variants; distributor finance available."
+        },
+        "feesDetails": {
+            "facility": "term",
+            "processingFeePct": null,
+            "assumedTenorMonths": 60,
+            "rateNote": "13.50%–15.00% p.a.",
+            "other": null
+        },
+        "sourceUrl": "https://www.citybankplc.com/",
+        "lastVerifiedAt": 1792281600000,
+        "isActive": true
+    }
+]

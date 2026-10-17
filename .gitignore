@@ -1,0 +1,110 @@
+# =============================================================================
+#  Nothing here is committed: credentials, machine-local state, build output.
+#
+#  Rule of thumb: if a value can get you into the deployed Worker, a database,
+#  an AI provider or a signing key, it belongs in a secret store — never in a
+#  tracked file. Add new patterns to the "secrets" block below, and prefer a
+#  `*.example` template that holds placeholders only.
+# =============================================================================
+
+# ---------------------------------------------------------------- secrets ----
+# Wrangler's local secrets: JWT_SECRET, ADMIN_TOKEN and the AI provider keys
+# live in greenbiz/.dev.vars (see greenbiz/.dev.vars.example for the shape).
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# Generic environment files.
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Key material, certificates and Android signing config.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+key.properties
+keystore.properties
+signing.properties
+
+# Firebase / Google services files embed API keys and project ids.
+google-services.json
+GoogleService-Info.plist
+
+# Package-manager and CLI credentials.
+.npmrc
+.netrc
+
+# Files a human has explicitly labelled as secret.
+secrets.json
+.secrets/
+*.kdbx
+
+# --------------------------------------------- local state and snapshots ----
+# Wrangler's local D1 database, KV cache and build output.
+.wrangler/
+greenbiz/dist/
+
+# History / snapshot extensions copy *every* file in the workspace, so a copy of
+# .dev.vars can end up in here. Never commit this tree.
+.history
+.history/
+.lh/
+.lhignore
+
+# Editor scratch state. The shared .vscode/settings.json is safe to commit.
+.vscode-test
+*.code-workspace
+
+# ------------------------------------------------------ misc (Flutter) -------
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Widget Preview related
+.widget_preview/

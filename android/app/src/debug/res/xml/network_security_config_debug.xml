@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-only network policy: cleartext allowed.
+
+    `wrangler dev` serves plain HTTP, and when the app runs on a physical
+    device that server lives at a LAN address such as http://192.168.1.5:8787.
+    Android 9+ blocks cleartext by default, which made those requests fail with
+    a misleading connection error. This file is applied only to debug builds
+    via src/debug/AndroidManifest.xml; release builds use the HTTPS-only
+    network_security_config.xml.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

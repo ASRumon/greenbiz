@@ -1,0 +1,35 @@
+{
+  "name": "greenbiz",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "test": "vitest",
+    "cf-typegen": "wrangler types",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "wrangler d1 migrations apply greenbiz_db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply greenbiz_db --remote",
+    "db:studio": "drizzle-kit studio",
+    "seed": "tsx seed/seed.ts && wrangler d1 execute greenbiz_db --local --file=seed/seed.sql",
+    "seed:remote": "tsx seed/seed.ts && wrangler d1 execute greenbiz_db --remote --file=seed/seed.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.0.0",
+    "@types/node": "^26.6.5",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^5.5.2",
+    "vitest": "~4.1.0",
+    "wrangler": "^4.151.1"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.13",
+    "jose": "^6.2.12",
+    "zod": "^4.6.7"
+  }
+}

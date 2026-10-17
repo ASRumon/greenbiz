@@ -1,0 +1,24 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    // There are three Flutter SDKs on this machine and PATH resolves to an older
+    // one (3.44.4 / Dart 3.12.2) which cannot satisfy pubspec.yaml's
+    // `sdk: ^3.13.3`. Pinning the SDK keeps the editor, the Dart-Code tasks and
+    // the analysis server on the 3.47.4 SDK this project is verified against.
+    "dart.flutterSdkPath": "C:\\Flutter\\flutter",
+    // An auto-formatter has twice rewritten AndroidManifest.xml into invalid XML:
+    // it collapses the file onto one line and turns `android:name` into
+    // `android: name`, which fails :app:processDebugMainManifest with
+    // "Name cannot begin with the ' ' character". User settings turn
+    // format-on-save on globally and route css/jsonc through
+    // OldStarchy.petty-formatter, so formatting is disabled for XML here.
+    // Override this block if you install a real XML formatter.
+    "[xml]": {
+        "editor.formatOnSave": false,
+        "editor.formatOnPaste": false
+    },
+    // tsconfig.json and this file are jsonc, which the petty formatter also
+    // reflows. The built-in JSON formatter leaves them alone.
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    }
+}

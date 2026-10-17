@@ -1,0 +1,103 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+        GreenBiz permissions.
+
+        INTERNET           - talking to the GreenBiz Worker API.
+        READ_SMS           - reading payment confirmation messages from bKash,
+                             Nagad, Rocket and bank senders. Requested at runtime
+                             only when the user taps "Grant permission" in the
+                             Profile tab; the app filters the inbox to known
+                             payment senders on the device and never uploads
+                             personal messages.
+        RECEIVE_SMS        - live payment alerts. SmsPaymentReceiver ignores every
+                             sender that is not a known mobile-money / bank
+                             alert sender, so personal messages and OTPs are
+                             discarded before they are stored.
+        POST_NOTIFICATIONS - Android 13+ permission for the "new payment" alert
+                             shown while the app is not on screen.
+
+        Deliberately absent: READ_CONTACTS, READ_CALL_LOG, ACCESS_FINE_LOCATION,
+        and any advertising ID permission. This app has no use for them.
+
+        NOTE: keep this file formatted as XML. `.vscode/settings.json` disables
+        format-on-save for XML because a non-XML formatter rewrites this file
+        into something Android cannot parse.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.READ_SMS"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Voice entry on the Sell screen. Requested at runtime the first time the
+         user taps the microphone; nothing is recorded by GreenBiz itself — the
+         text produced by the device recognizer is what gets sent to the AI. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <!-- minSdk is intentionally NOT declared here: Gradle owns it via
+         `minSdk = flutter.minSdkVersion` (currently >= 21, which satisfies both
+         flutter_sms_inbox at 21+ and permission_handler's SMS APIs at 23+).
+         A <uses-sdk> element here would conflict with the Gradle value. -->
+
+    <application
+        android:label="GreenBiz"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- Live payment alerts. SMS_RECEIVED is a protected broadcast, so only
+             the system can send it; a receiver-level permission is not needed
+             and some emulators fail to deliver with one. -->
+        <receiver
+            android:name=".SmsPaymentReceiver"
+            android:exported="true">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

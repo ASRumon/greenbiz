@@ -1,0 +1,3001 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+	<meta name="color-scheme" content="light dark" />
+	<meta name="description" content="GreenBiz — inventory, sales and payments for small shops, in the browser." />
+	<title>GreenBiz — Shop dashboard</title>
+	<link rel="icon"
+		href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2315653D'/%3E%3Ctext x='16' y='22' font-family='system-ui' font-size='16' font-weight='700' fill='white' text-anchor='middle'%3EGB%3C/text%3E%3C/svg%3E" />
+	<style>
+		:root {
+			--bg: #f3f7f4;
+			--surface: #ffffff;
+			--surface-2: #f7faf8;
+			--ink: #10201a;
+			--muted: #5c6f66;
+			--line: #e0e8e3;
+			--brand: #15653d;
+			--brand-ink: #ffffff;
+			--brand-soft: #e4f1e9;
+			--in: #1b7f4b;
+			--out: #b3261e;
+			--warn: #b26a00;
+			--shadow: 0 1px 2px rgba(16, 32, 26, 0.06), 0 8px 24px rgba(16, 32, 26, 0.06);
+			--radius: 16px;
+		}
+
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg: #0d1512;
+				--surface: #131f1a;
+				--surface-2: #182620;
+				--ink: #e8f0eb;
+				--muted: #9bb0a6;
+				--line: #24342c;
+				--brand: #3fae74;
+				--brand-ink: #06120c;
+				--brand-soft: #1a2d24;
+				--in: #4ac283;
+				--out: #ff8a80;
+				--warn: #e0a94a;
+				--shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.35);
+			}
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		html,
+		body {
+			margin: 0;
+			min-height: 100%;
+		}
+
+		body {
+			background: var(--bg);
+			color: var(--ink);
+			font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+			-webkit-font-smoothing: antialiased;
+		}
+
+		h1,
+		h2,
+		h3,
+		p {
+			margin: 0;
+		}
+
+		a {
+			color: var(--brand);
+		}
+
+		[hidden] {
+			display: none !important;
+		}
+
+		.muted {
+			color: var(--muted);
+		}
+
+		.small {
+			font-size: 13px;
+		}
+
+		.mono {
+			font-variant-numeric: tabular-nums;
+		}
+
+		/* ---------------------------------------------------------- auth --- */
+
+		.auth {
+			min-height: 100vh;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+			background:
+				radial-gradient(1200px 600px at 10% -10%, var(--brand-soft), transparent 60%),
+				var(--bg);
+		}
+
+		.auth-card {
+			width: min(960px, 100%);
+			display: grid;
+			grid-template-columns: 1.1fr 1fr;
+			background: var(--surface);
+			border: 1px solid var(--line);
+			border-radius: 24px;
+			box-shadow: var(--shadow);
+			overflow: hidden;
+		}
+
+		@media (max-width: 820px) {
+			.auth-card {
+				grid-template-columns: 1fr;
+			}
+
+			.auth-pitch {
+				display: none;
+			}
+		}
+
+		.auth-pitch {
+			padding: 40px;
+			background: linear-gradient(160deg, #15653d, #0e4a2c);
+			color: #eaf5ee;
+			display: flex;
+			flex-direction: column;
+			gap: 18px;
+		}
+
+		.auth-pitch h2 {
+			font-size: 26px;
+			line-height: 1.25;
+		}
+
+		.auth-pitch ul {
+			margin: 0;
+			padding-left: 18px;
+			display: grid;
+			gap: 8px;
+			font-size: 14px;
+			color: #cfe6d9;
+		}
+
+		.auth-body {
+			padding: 36px;
+		}
+
+		.auth-tabs {
+			display: flex;
+			gap: 6px;
+			background: var(--surface-2);
+			border: 1px solid var(--line);
+			border-radius: 999px;
+			padding: 4px;
+			margin-bottom: 22px;
+		}
+
+		.auth-tabs button {
+			flex: 1;
+			border: 0;
+			background: transparent;
+			color: var(--muted);
+			padding: 8px 12px;
+			border-radius: 999px;
+			font: inherit;
+			font-weight: 600;
+			cursor: pointer;
+		}
+
+		.auth-tabs button[aria-selected="true"] {
+			background: var(--surface);
+			color: var(--ink);
+			box-shadow: var(--shadow);
+		}
+
+		/* -------------------------------------------------------- controls --- */
+
+		label {
+			display: grid;
+			gap: 6px;
+			font-size: 13px;
+			font-weight: 600;
+			color: var(--muted);
+		}
+
+		input,
+		select,
+		textarea {
+			font: inherit;
+			color: var(--ink);
+			background: var(--surface-2);
+			border: 1px solid var(--line);
+			border-radius: 12px;
+			padding: 10px 12px;
+			width: 100%;
+			min-width: 0;
+		}
+
+		input:focus,
+		select:focus,
+		textarea:focus {
+			outline: 2px solid var(--brand);
+			outline-offset: 1px;
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			font: inherit;
+			font-weight: 600;
+			border-radius: 12px;
+			border: 1px solid var(--line);
+			background: var(--surface);
+			color: var(--ink);
+			padding: 10px 16px;
+			cursor: pointer;
+			white-space: nowrap;
+		}
+
+		.btn:hover {
+			border-color: var(--brand);
+		}
+
+		.btn.primary {
+			background: var(--brand);
+			border-color: var(--brand);
+			color: var(--brand-ink);
+		}
+
+		.btn.primary:hover {
+			filter: brightness(1.06);
+		}
+
+		.btn.ghost {
+			background: transparent;
+		}
+
+		.btn.danger {
+			color: var(--out);
+		}
+
+		.btn.small {
+			padding: 6px 10px;
+			font-size: 13px;
+			border-radius: 10px;
+		}
+
+		.btn:disabled {
+			opacity: 0.55;
+			cursor: not-allowed;
+		}
+
+		.btn-icon {
+			width: 32px;
+			height: 32px;
+			padding: 0;
+			border-radius: 10px;
+		}
+
+		.form {
+			display: grid;
+			gap: 14px;
+		}
+
+		.row {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 12px;
+		}
+
+		.form-error {
+			color: var(--out);
+			font-size: 13px;
+			min-height: 1em;
+		}
+
+		/* ----------------------------------------------------------- shell --- */
+
+		.shell {
+			display: grid;
+			grid-template-columns: 244px minmax(0, 1fr);
+			min-height: 100vh;
+		}
+
+		.sidebar {
+			display: flex;
+			flex-direction: column;
+			gap: 18px;
+			padding: 20px 14px;
+			border-right: 1px solid var(--line);
+			background: var(--surface);
+			position: sticky;
+			top: 0;
+			height: 100vh;
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 4px 6px;
+		}
+
+		.brand .logo {
+			width: 36px;
+			height: 36px;
+			border-radius: 11px;
+			background: var(--brand);
+			color: var(--brand-ink);
+			display: grid;
+			place-items: center;
+			font-weight: 800;
+			letter-spacing: 0.4px;
+			flex: none;
+		}
+
+		.brand small {
+			display: block;
+			color: var(--muted);
+			font-size: 12px;
+		}
+
+		.nav {
+			display: grid;
+			gap: 4px;
+		}
+
+		.nav a {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 10px 12px;
+			border-radius: 12px;
+			color: var(--muted);
+			text-decoration: none;
+			font-weight: 600;
+			font-size: 14px;
+		}
+
+		.nav a:hover {
+			background: var(--surface-2);
+			color: var(--ink);
+		}
+
+		.nav a[aria-current="page"] {
+			background: var(--brand-soft);
+			color: var(--brand);
+		}
+
+		.nav svg {
+			width: 18px;
+			height: 18px;
+			flex: none;
+		}
+
+		.side-foot {
+			margin-top: auto;
+			display: grid;
+			gap: 8px;
+			border-top: 1px solid var(--line);
+			padding-top: 14px;
+		}
+
+		.main {
+			min-width: 0;
+			padding: 22px 26px 48px;
+		}
+
+		.topbar {
+			display: flex;
+			align-items: flex-end;
+			justify-content: space-between;
+			gap: 16px;
+			flex-wrap: wrap;
+			margin-bottom: 18px;
+		}
+
+		.topbar h1 {
+			font-size: 24px;
+			letter-spacing: -0.3px;
+		}
+
+		.top-actions {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+
+		@media (max-width: 860px) {
+			.shell {
+				grid-template-columns: 1fr;
+			}
+
+			.sidebar {
+				position: fixed;
+				inset: auto 0 0 0;
+				height: auto;
+				flex-direction: row;
+				align-items: center;
+				gap: 6px;
+				padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+				border-right: 0;
+				border-top: 1px solid var(--line);
+				z-index: 20;
+			}
+
+			.brand,
+			.side-foot .who {
+				display: none;
+			}
+
+			.side-foot {
+				margin: 0;
+				border: 0;
+				padding: 0;
+			}
+
+			.nav {
+				display: flex;
+				flex: 1;
+				justify-content: space-around;
+				gap: 2px;
+			}
+
+			.nav a {
+				flex-direction: column;
+				gap: 3px;
+				font-size: 11px;
+				padding: 6px 8px;
+			}
+
+			.main {
+				padding: 16px 14px 96px;
+			}
+		}
+
+		/* ------------------------------------------------------------ cards --- */
+
+		.view {
+			display: grid;
+			gap: 16px;
+		}
+
+		.card {
+			background: var(--surface);
+			border: 1px solid var(--line);
+			border-radius: var(--radius);
+			padding: 18px;
+		}
+
+		.card-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			margin-bottom: 12px;
+			flex-wrap: wrap;
+		}
+
+		.card-head h2 {
+			font-size: 16px;
+		}
+
+		.grid-4 {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 14px;
+		}
+
+		.grid-2 {
+			display: grid;
+			grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+			gap: 16px;
+		}
+
+		@media (max-width: 1080px) {
+			.grid-4 {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+
+			.grid-2 {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		.stat {
+			display: grid;
+			gap: 6px;
+			background: var(--surface);
+			border: 1px solid var(--line);
+			border-radius: var(--radius);
+			padding: 16px;
+		}
+
+		.stat .k {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 0.6px;
+			color: var(--muted);
+			font-weight: 700;
+		}
+
+		.stat .v {
+			font-size: 22px;
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.stat .v.in {
+			color: var(--in);
+		}
+
+		.stat .v.out {
+			color: var(--out);
+		}
+
+		.score-wrap {
+			display: flex;
+			align-items: center;
+			gap: 16px;
+		}
+
+		.score-ring {
+			--pct: 0;
+			width: 74px;
+			height: 74px;
+			border-radius: 50%;
+			flex: none;
+			display: grid;
+			place-items: center;
+			background: conic-gradient(var(--ring, var(--brand)) calc(var(--pct) * 1%), var(--line) 0);
+		}
+
+		.score-ring>span {
+			width: 58px;
+			height: 58px;
+			border-radius: 50%;
+			background: var(--surface);
+			display: grid;
+			place-items: center;
+			text-align: center;
+			line-height: 1.05;
+			font-weight: 800;
+			font-size: 17px;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.score-ring .of {
+			display: block;
+			font-size: 8.5px;
+			font-weight: 600;
+			color: var(--muted);
+			letter-spacing: 0;
+		}
+
+		.bars {
+			display: grid;
+			gap: 10px;
+		}
+
+		.bar {
+			display: grid;
+			gap: 4px;
+		}
+
+		.bar .bar-head {
+			display: flex;
+			justify-content: space-between;
+			font-size: 12.5px;
+			color: var(--muted);
+		}
+
+		.bar .track {
+			height: 8px;
+			border-radius: 99px;
+			background: var(--line);
+			overflow: hidden;
+		}
+
+		.bar .fill {
+			height: 100%;
+			border-radius: 99px;
+			background: var(--brand);
+		}
+
+		/* ------------------------------------------------------------ lists --- */
+
+		.list {
+			display: grid;
+		}
+
+		.item {
+			display: grid;
+			grid-template-columns: 40px minmax(0, 1fr) auto;
+			align-items: center;
+			gap: 12px;
+			padding: 11px 2px;
+			border-bottom: 1px solid var(--line);
+		}
+
+		.item:last-child {
+			border-bottom: 0;
+		}
+
+		.avatar {
+			width: 36px;
+			height: 36px;
+			border-radius: 12px;
+			background: var(--brand-soft);
+			color: var(--brand);
+			display: grid;
+			place-items: center;
+			font-weight: 700;
+			font-size: 13px;
+		}
+
+		.item .title {
+			font-weight: 600;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.item .sub {
+			color: var(--muted);
+			font-size: 12.5px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.amount {
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+			text-align: right;
+			white-space: nowrap;
+		}
+
+		.amount.in {
+			color: var(--in);
+		}
+
+		.amount.out {
+			color: var(--out);
+		}
+
+		.chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+			border-radius: 999px;
+			padding: 2px 8px;
+			font-size: 11.5px;
+			font-weight: 700;
+			border: 1px solid transparent;
+			white-space: nowrap;
+		}
+
+		.chip.brand {
+			background: var(--brand-soft);
+			color: var(--brand);
+			border-color: color-mix(in srgb, var(--brand) 30%, transparent);
+		}
+
+		.chip.good {
+			background: color-mix(in srgb, var(--in) 14%, transparent);
+			color: var(--in);
+			border-color: color-mix(in srgb, var(--in) 35%, transparent);
+		}
+
+		.chip.warn {
+			background: color-mix(in srgb, var(--warn) 16%, transparent);
+			color: var(--warn);
+			border-color: color-mix(in srgb, var(--warn) 35%, transparent);
+		}
+
+		.chip.quiet {
+			background: var(--surface-2);
+			color: var(--muted);
+			border-color: var(--line);
+		}
+
+		.chips {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+
+		.chip-btn {
+			font: inherit;
+			font-weight: 600;
+			font-size: 13px;
+			border-radius: 999px;
+			padding: 7px 14px;
+			border: 1px solid var(--line);
+			background: var(--surface);
+			color: var(--muted);
+			cursor: pointer;
+		}
+
+		.chip-btn[aria-pressed="true"] {
+			background: var(--brand);
+			border-color: var(--brand);
+			color: var(--brand-ink);
+		}
+
+		/* ---------------------------------------------------------- tables --- */
+
+		.table-wrap {
+			overflow-x: auto;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 14px;
+		}
+
+		th,
+		td {
+			text-align: left;
+			padding: 10px 8px;
+			border-bottom: 1px solid var(--line);
+			white-space: nowrap;
+		}
+
+		th {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			color: var(--muted);
+		}
+
+		td.num,
+		th.num {
+			text-align: right;
+			font-variant-numeric: tabular-nums;
+		}
+
+		tr:last-child td {
+			border-bottom: 0;
+		}
+
+		.empty {
+			padding: 22px;
+			text-align: center;
+			color: var(--muted);
+			font-size: 14px;
+		}
+
+		/* ----------------------------------------------------------- sell --- */
+
+		.sell {
+			display: grid;
+			grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr);
+			gap: 16px;
+			align-items: start;
+		}
+
+		@media (max-width: 1080px) {
+			.sell {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		.pick {
+			display: grid;
+			gap: 6px;
+			max-height: 420px;
+			overflow: auto;
+			margin-top: 10px;
+		}
+
+		.pick button {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			gap: 10px;
+			align-items: center;
+			text-align: left;
+			font: inherit;
+			background: var(--surface-2);
+			border: 1px solid var(--line);
+			border-radius: 12px;
+			padding: 10px 12px;
+			cursor: pointer;
+			color: var(--ink);
+		}
+
+		.pick button:hover {
+			border-color: var(--brand);
+		}
+
+		.pick .name {
+			font-weight: 600;
+		}
+
+		.cart {
+			display: grid;
+			gap: 8px;
+		}
+
+		.cart-line {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto auto;
+			gap: 8px;
+			align-items: center;
+			border: 1px solid var(--line);
+			border-radius: 12px;
+			padding: 10px;
+			background: var(--surface-2);
+		}
+
+		.qty {
+			display: inline-flex;
+			align-items: center;
+			gap: 2px;
+			border: 1px solid var(--line);
+			border-radius: 10px;
+			background: var(--surface);
+			padding: 2px;
+		}
+
+		.qty button {
+			width: 26px;
+			height: 26px;
+			border: 0;
+			background: transparent;
+			color: var(--ink);
+			font: inherit;
+			font-weight: 700;
+			cursor: pointer;
+			border-radius: 8px;
+		}
+
+		.qty button:hover {
+			background: var(--brand-soft);
+		}
+
+		.qty span {
+			min-width: 34px;
+			text-align: center;
+			font-weight: 600;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.total-row {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			padding-top: 12px;
+			margin-top: 4px;
+			border-top: 1px dashed var(--line);
+		}
+
+		.total-row .big {
+			font-size: 24px;
+			font-weight: 800;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.sms-row {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			gap: 10px;
+			align-items: center;
+			width: 100%;
+			text-align: left;
+			font: inherit;
+			color: var(--ink);
+			background: var(--surface-2);
+			border: 1px solid var(--line);
+			border-radius: 12px;
+			padding: 10px;
+			cursor: pointer;
+		}
+
+		.sms-row[aria-pressed="true"] {
+			border-color: var(--brand);
+			background: var(--brand-soft);
+		}
+
+		.sms-list {
+			display: grid;
+			gap: 6px;
+			max-height: 260px;
+			overflow: auto;
+			margin-top: 10px;
+		}
+
+		.hint {
+			color: var(--muted);
+			font-size: 12.5px;
+		}
+
+		/* --------------------------------------------------------- dialog --- */
+
+		dialog {
+			border: 1px solid var(--line);
+			border-radius: 18px;
+			background: var(--surface);
+			color: var(--ink);
+			padding: 0;
+			width: min(520px, calc(100vw - 32px));
+			box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+		}
+
+		dialog::backdrop {
+			background: rgba(6, 18, 12, 0.45);
+		}
+
+		.dialog-body {
+			padding: 20px;
+			display: grid;
+			gap: 14px;
+		}
+
+		.dialog-actions {
+			display: flex;
+			justify-content: flex-end;
+			gap: 8px;
+			padding-top: 4px;
+		}
+
+		/* ---------------------------------------------------------- toast --- */
+
+		.toast-host {
+			position: fixed;
+			inset: auto 0 20px 0;
+			display: grid;
+			justify-items: center;
+			gap: 8px;
+			z-index: 60;
+			pointer-events: none;
+			padding: 0 12px;
+		}
+
+		.toast {
+			background: var(--ink);
+			color: var(--bg);
+			border-radius: 999px;
+			padding: 10px 18px;
+			font-size: 14px;
+			font-weight: 600;
+			box-shadow: var(--shadow);
+			max-width: min(560px, 100%);
+		}
+
+		.toast.error {
+			background: var(--out);
+			color: #fff;
+		}
+
+		.skeleton {
+			height: 84px;
+			border-radius: var(--radius);
+			background: linear-gradient(90deg, var(--surface), var(--surface-2), var(--surface));
+			background-size: 200% 100%;
+			animation: shimmer 1.2s linear infinite;
+		}
+
+		/* --------------------------------------------------- app-parity bits --- */
+
+		.topbar-title {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		/* Money in / out, side by side like the app's Cash flow card. */
+		.flow {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 14px;
+		}
+
+		.flow-figure {
+			font-size: 20px;
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.flow-figure.in {
+			color: var(--in);
+		}
+
+		.flow-figure.out {
+			color: var(--out);
+		}
+
+		/* Right-hand column of a row: value, then its actions. */
+		.item-end {
+			display: grid;
+			justify-items: end;
+			gap: 3px;
+		}
+
+		.stock-value {
+			font-size: 26px;
+			font-weight: 800;
+			color: var(--in);
+			font-variant-numeric: tabular-nums;
+			margin-top: 4px;
+		}
+
+		.stock {
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.stock.in {
+			color: var(--in);
+		}
+
+		.stock.low {
+			color: var(--warn);
+		}
+
+		.stock.out {
+			color: var(--out);
+		}
+
+		.arrow {
+			font-size: 17px;
+			line-height: 1;
+			width: 20px;
+			text-align: center;
+		}
+
+		.arrow.in {
+			color: var(--in);
+		}
+
+		.arrow.out {
+			color: var(--out);
+		}
+
+		.account {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+		}
+
+		.avatar.big {
+			width: 54px;
+			height: 54px;
+			border-radius: 17px;
+			font-size: 17px;
+		}
+
+		.card h2 .count {
+			color: var(--muted);
+			font-weight: 600;
+		}
+
+		.card-head p {
+			margin-top: 2px;
+		}
+
+		@keyframes shimmer {
+			to {
+				background-position: -200% 0;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<!-- ------------------------------------------------------------ auth --- -->
+	<section id="auth-view" class="auth" hidden>
+		<div class="auth-card">
+			<div class="auth-pitch">
+				<div class="brand" style="padding: 0">
+					<span class="logo">GB</span>
+					<div>
+						<strong>GreenBiz</strong>
+						<small style="color: #b9d8c7">SME finance copilot</small>
+					</div>
+				</div>
+				<h2>Your shop, on any device.</h2>
+				<ul>
+					<li>Inventory and selling from the counter or a laptop</li>
+					<li>Payments from bKash, Nagad, Rocket, Upay and UPI in one ledger</li>
+					<li>A credit profile built from how you actually trade</li>
+					<li>The same account and the same ledger as the Android app</li>
+				</ul>
+				<p class="small" style="margin-top: auto; color: #a9cbbb">
+					No install. Sign in with the username and password you already use.
+				</p>
+			</div>
+			<div class="auth-body">
+				<div class="auth-tabs" role="tablist">
+					<button type="button" role="tab" data-auth-mode="login" aria-selected="true">Sign in</button>
+					<button type="button" role="tab" data-auth-mode="register" aria-selected="false">Create
+						account</button>
+				</div>
+
+				<form id="login-form" class="form" autocomplete="on">
+					<h2>Welcome back</h2>
+					<p class="small muted" style="margin-top: -8px">Sign in to see your inventory, payments, and credit
+						profile.</p>
+					<label>
+						Username or email
+						<input name="username" autocomplete="username" required />
+					</label>
+					<label>
+						Password
+						<input name="password" type="password" autocomplete="current-password" required />
+					</label>
+					<p class="form-error" data-error></p>
+					<button class="btn primary" type="submit">Sign in</button>
+					<p class="hint" style="text-align: center">Your data stays on your account. We never share your
+						messages or inventory with anyone.</p>
+				</form>
+
+				<form id="register-form" class="form" autocomplete="on" hidden>
+					<h2>Create account</h2>
+					<label>
+						Your name
+						<input name="fullName" autocomplete="name" required maxlength="120" />
+					</label>
+					<div class="row">
+						<label>
+							Username
+							<input name="username" autocomplete="username" required minlength="3" maxlength="32" />
+						</label>
+						<label>
+							Password
+							<input name="password" type="password" autocomplete="new-password" required minlength="8" />
+						</label>
+					</div>
+					<label>
+						Email (optional)
+						<input name="email" type="email" autocomplete="email" maxlength="160" />
+					</label>
+					<label>
+						Shop name (optional)
+						<input name="shopName" maxlength="120" placeholder="Rumon Store" />
+					</label>
+					<p class="form-error" data-error></p>
+					<button class="btn primary" type="submit">Create account</button>
+				</form>
+			</div>
+		</div>
+	</section>
+
+	<!-- ----------------------------------------------------------- shell --- -->
+	<div id="shell" class="shell" hidden>
+		<aside class="sidebar">
+			<div class="brand">
+				<span class="logo">GB</span>
+				<div>
+					<strong>GreenBiz</strong>
+					<small id="side-shop">—</small>
+				</div>
+			</div>
+
+			<nav class="nav" id="nav">
+				<a href="#/inventory" data-route="inventory">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+						stroke-linejoin="round">
+						<path d="M12 3 4 7v10l8 4 8-4V7z" />
+						<path d="M4 7l8 4 8-4M12 11v10" />
+					</svg>
+					Inventory
+				</a>
+				<a href="#/finance" data-route="finance">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+						stroke-linejoin="round">
+						<path d="M4 17l5-5 4 3 6-7" />
+						<path d="M4 20h16" />
+					</svg>
+					Finance
+				</a>
+				<a href="#/profile" data-route="profile">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+						stroke-linecap="round">
+						<circle cx="12" cy="9" r="3.4" />
+						<path d="M5 20c1.6-3.4 4-5 7-5s5.4 1.6 7 5" />
+					</svg>
+					Profile
+				</a>
+			</nav>
+
+			<div class="side-foot">
+				<p class="who small muted" id="who">—</p>
+				<button class="btn ghost small" type="button" data-action="logout">Log out</button>
+			</div>
+		</aside>
+
+		<main class="main">
+			<header class="topbar">
+				<div class="topbar-title">
+					<button class="btn ghost small" type="button" id="back-button" data-action="back" hidden
+						aria-label="Back">← Back</button>
+					<div>
+						<h1 id="page-title">Inventory</h1>
+						<p class="muted small" id="page-sub"></p>
+					</div>
+				</div>
+				<div class="top-actions" id="top-actions"></div>
+			</header>
+			<div id="view" class="view"></div>
+		</main>
+	</div>
+
+	<!-- --------------------------------------------------------- dialogs --- -->
+	<dialog id="product-dialog">
+		<form id="product-form" class="dialog-body" novalidate>
+			<h2 id="product-dialog-title">Add product</h2>
+			<input type="hidden" name="productId" />
+			<label>
+				Product name
+				<input name="productName" required maxlength="120" placeholder="Aromatic rice 5kg" />
+			</label>
+			<div class="row">
+				<label>
+					Unit
+					<input name="unit" required maxlength="20" placeholder="piece, kg, bag" />
+				</label>
+				<label>
+					Selling price
+					<input name="price" inputmode="decimal" required placeholder="95.50" />
+				</label>
+			</div>
+			<label>
+				Stock on hand
+				<input name="stock" inputmode="decimal" required placeholder="24" />
+			</label>
+			<p class="form-error" data-error></p>
+			<div class="dialog-actions">
+				<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+				<button type="submit" class="btn primary">Add to inventory</button>
+			</div>
+		</form>
+	</dialog>
+
+	<dialog id="payment-dialog">
+		<form id="payment-form" class="dialog-body" novalidate>
+			<h2>Add a payment</h2>
+			<div class="row">
+				<label>
+					Direction
+					<select name="direction">
+						<option value="in">Money in</option>
+						<option value="out">Money out</option>
+					</select>
+				</label>
+				<label>
+					Amount
+					<input name="amount" inputmode="decimal" required placeholder="0.00" />
+				</label>
+			</div>
+			<div class="row">
+				<label>
+					Method
+					<select name="paymentMethod" id="payment-method-select"></select>
+				</label>
+				<label>
+					TrxID (optional)
+					<input name="reference" maxlength="64" />
+				</label>
+			</div>
+			<label>
+				Customer / supplier (optional)
+				<input name="counterparty" maxlength="120" />
+			</label>
+			<label>
+				Note (optional)
+				<input name="note" maxlength="240" />
+			</label>
+			<p class="form-error" data-error></p>
+			<div class="dialog-actions">
+				<button type="button" class="btn ghost" data-close-dialog>Cancel</button>
+				<button type="submit" class="btn primary">Add payment</button>
+			</div>
+		</form>
+	</dialog>
+
+	<dialog id="receipt-dialog">
+		<div class="dialog-body" id="receipt-body"></div>
+	</dialog>
+
+	<div class="toast-host" id="toast-host"></div>
+
+	<script>
+		(function () {
+			"use strict";
+
+			/* ------------------------------------------------------- constants */
+
+			const TOKEN_KEY = "greenbiz.token";
+			const SHOP_KEY = "greenbiz.shopId";
+
+			/** Cash-out charges run ~10-20 taka per thousand; the Worker uses the same band. */
+			const CASH_OUT_MAX_PER_THOUSAND = 20;
+			const MIN_TOLERANCE_MINOR = 100;
+
+			const SUGGEST_WINDOW_MS = 10 * 60 * 1000;
+			const HISTORY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+			const SUGGEST_MINUTES = SUGGEST_WINDOW_MS / 60000;
+			const HISTORY_DAYS = HISTORY_WINDOW_MS / 86400000;
+			const LOW_STOCK_AT = 5;
+
+			const METHODS = [
+				{ value: "cash", label: "Cash" },
+				{ value: "bkash", label: "bKash" },
+				{ value: "nagad", label: "Nagad" },
+				{ value: "rocket", label: "Rocket" },
+				{ value: "upay", label: "Upay" },
+				{ value: "upi", label: "UPI" },
+				{ value: "other", label: "Other" },
+			];
+
+			/* --------------------------------------------------------- helpers */
+
+			const $ = (selector, root) => (root || document).querySelector(selector);
+			const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
+
+			function esc(value) {
+				return String(value == null ? "" : value).replace(/[&<>"']/g, (ch) => {
+					return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+				});
+			}
+
+			function symbolFor(currency) {
+				if (currency === "INR") return "\u20B9";
+				if (currency === "BDT") return "\u09F3";
+				return currency || "";
+			}
+
+			function groupThousands(digits) {
+				if (digits.length <= 3) return digits;
+				let out = "";
+				for (let i = digits.length; i > 0; i -= 3) {
+					const start = Math.max(0, i - 3);
+					out = digits.slice(start, i) + (out ? "," + out : "");
+				}
+				return out;
+			}
+
+			/** Integer minor units in, "৳ 1,500.00" out. Never divides into a float. */
+			function formatMinor(minor, currency, compact) {
+				const value = Math.trunc(Number(minor) || 0);
+				const negative = value < 0;
+				const abs = Math.abs(value);
+				const whole = Math.trunc(abs / 100);
+				const fraction = abs - whole * 100;
+				const digits = compact
+					? groupThousands(String(whole))
+					: groupThousands(String(whole)) + "." + String(fraction).padStart(2, "0");
+				return (negative ? "-" : "") + symbolFor(currency || "BDT") + " " + digits;
+			}
+
+			/** "৳ 1,500" — no decimals, for headline figures. */
+			function formatMinorCompact(minor, currency) {
+				return formatMinor(minor, currency, true);
+			}
+
+			/** "1,250.50" -> 125050. Returns null when the text is not money. */
+			function parseMoneyToMinor(text) {
+				const cleaned = String(text == null ? "" : text).replace(/[,\s]/g, "").trim();
+				const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(cleaned);
+				if (!match) return null;
+				const fraction = (match[2] || "").padEnd(2, "0");
+				return Number(match[1]) * 100 + Number(fraction || "0");
+			}
+
+			function minorToInput(minor) {
+				const whole = Math.trunc(minor / 100);
+				const fraction = minor - whole * 100;
+				return fraction === 0 ? String(whole) : whole + "." + String(fraction).padStart(2, "0");
+			}
+
+			function parseQuantity(text) {
+				const value = Number(String(text == null ? "" : text).replace(/[,\s]/g, "").trim());
+				if (!Number.isFinite(value) || value <= 0) return null;
+				return Math.round(value * 1000) / 1000;
+			}
+
+			function quantityLabel(quantity) {
+				return Number.isInteger(quantity) ? String(quantity) : String(Number(quantity.toFixed(2)));
+			}
+
+			function paymentToleranceMinor(expectedMinor) {
+				if (!(expectedMinor > 0)) return 0;
+				return Math.max(MIN_TOLERANCE_MINOR, Math.floor((expectedMinor * CASH_OUT_MAX_PER_THOUSAND) / 1000));
+			}
+
+			/** How a received amount compares with the bill: exact, cashOut or outside. */
+			function amountFit(receivedMinor, expectedMinor) {
+				const difference = receivedMinor - expectedMinor;
+				if (receivedMinor <= 0) return { fit: "outside", difference };
+				if (difference === 0) return { fit: "exact", difference };
+				if (Math.abs(difference) <= paymentToleranceMinor(expectedMinor)) return { fit: "cashOut", difference };
+				return { fit: "outside", difference };
+			}
+
+			function relativeTime(ms) {
+				if (!ms) return "never";
+				const diff = Date.now() - ms;
+				if (diff < 0) return "just now";
+				if (diff < 45000) return "just now";
+				const minutes = Math.round(diff / 60000);
+				if (minutes < 60) return minutes + (minutes === 1 ? " minute ago" : " minutes ago");
+				const hours = Math.round(diff / 3600000);
+				if (hours < 24) return hours + (hours === 1 ? " hour ago" : " hours ago");
+				const days = Math.round(diff / 86400000);
+				if (days < 30) return days + (days === 1 ? " day ago" : " days ago");
+				const months = Math.round(days / 30);
+				return months + (months === 1 ? " month ago" : " months ago");
+			}
+
+			function methodLabel(method) {
+				const found = METHODS.find((entry) => entry.value === method);
+				return found ? found.label : "Other";
+			}
+
+			/**
+			 * The method on a row. Older imports predate the column, so fall back to
+			 * the sender or brand in the note — the Android app does the same.
+			 */
+			function methodOf(transaction) {
+				if (transaction.paymentMethod) return transaction.paymentMethod;
+				const note = String(transaction.note || "").toLowerCase();
+				if (note.includes("bkash")) return "bkash";
+				if (note.includes("nagad")) return "nagad";
+				if (note.includes("rocket") || note.includes("dbbl")) return "rocket";
+				if (note.includes("upay") || note.includes("ucb")) return "upay";
+				if (note.includes("upi") || note.includes("paytm") || note.includes("phonepe") || note.includes("gpay")) return "upi";
+				if (note.includes("cash")) return "cash";
+				return null;
+			}
+
+			function methodText(transaction) {
+				const method = methodOf(transaction);
+				return method ? methodLabel(method) : "Unclassified";
+			}
+
+			function initials(text) {
+				const clean = String(text || "").trim();
+				if (!clean) return "?";
+				const parts = clean.split(/\s+/);
+				return (parts[0][0] + (parts[1] ? parts[1][0] : "")).toUpperCase();
+			}
+
+			function toast(message, kind) {
+				const host = $("#toast-host");
+				const node = document.createElement("div");
+				node.className = "toast" + (kind === "error" ? " error" : "");
+				node.textContent = message;
+				host.appendChild(node);
+				setTimeout(() => node.remove(), kind === "error" ? 5200 : 2800);
+			}
+
+			function moneyOf(transaction) {
+				return formatMinor(transaction.amountMinor, transaction.currency);
+			}
+
+			/* ------------------------------------------------------------- api */
+
+			const state = {
+				token: localStorage.getItem(TOKEN_KEY) || "",
+				user: null,
+				shops: [],
+				shopId: localStorage.getItem(SHOP_KEY) || "",
+				products: [],
+				// The receipt mirrors the app's "New sale" screen, field for field.
+				sell: {
+					lines: [],
+					customer: "",
+					payment: "cash", // cash | mobile
+					method: "", // bKash | Nagad | Rocket | UPI | Other, once picked
+					reference: "",
+					smsId: null,
+					query: "",
+					window: "recent",
+					messages: [],
+				},
+				paymentsFilter: "all",
+			};
+
+			async function api(path, options) {
+				const config = options || {};
+				const headers = {};
+				if (config.body !== undefined) headers["content-type"] = "application/json";
+				if (state.token) headers.authorization = "Bearer " + state.token;
+
+				let response;
+				try {
+					response = await fetch("/api" + path, {
+						method: config.method || "GET",
+						headers,
+						body: config.body === undefined ? undefined : JSON.stringify(config.body),
+					});
+				} catch (error) {
+					throw new Error("Cannot reach the server. Check your connection.");
+				}
+
+				const text = await response.text();
+				let data = null;
+				try {
+					data = text ? JSON.parse(text) : null;
+				} catch (error) {
+					data = null;
+				}
+
+				if (!response.ok) {
+					const error = new Error(
+						(data && data.error && data.error.message) ||
+						(response.status === 401 ? "Please sign in again." : "Request failed (" + response.status + ")"),
+					);
+					error.status = response.status;
+					if (response.status === 401 && state.token) signOut(true);
+					throw error;
+				}
+				return data;
+			}
+
+			/* ---------------------------------------------------------- session */
+
+			function saveSession(token, shopId) {
+				state.token = token;
+				if (shopId) {
+					state.shopId = shopId;
+					localStorage.setItem(SHOP_KEY, shopId);
+				}
+				localStorage.setItem(TOKEN_KEY, token);
+			}
+
+			function signOut(notify) {
+				state.token = "";
+				state.user = null;
+				state.shops = [];
+				state.products = [];
+				state.sell = {
+					lines: [],
+					customer: "",
+					payment: "cash",
+					method: "",
+					reference: "",
+					smsId: null,
+					query: "",
+					window: "recent",
+					messages: [],
+				};
+				localStorage.removeItem(TOKEN_KEY);
+				localStorage.removeItem(SHOP_KEY);
+				showAuth();
+				if (notify) toast("Logged out");
+			}
+
+			function showAuth() {
+				$("#shell").hidden = true;
+				$("#auth-view").hidden = false;
+				setAuthMode("login");
+				$("#login-form").reset();
+				$("#register-form").reset();
+			}
+
+			function setAuthMode(mode) {
+				$$(".auth-tabs button").forEach((button) => {
+					button.setAttribute("aria-selected", String(button.dataset.authMode === mode));
+				});
+				$("#login-form").hidden = mode !== "login";
+				$("#register-form").hidden = mode !== "register";
+				const active = mode === "login" ? $("#login-form") : $("#register-form");
+				const firstInput = active.querySelector("input");
+				if (firstInput) setTimeout(() => firstInput.focus(), 30);
+			}
+
+			async function showApp() {
+				$("#auth-view").hidden = true;
+				$("#shell").hidden = false;
+				const shop = currentShop();
+				$("#side-shop").textContent = shop ? shop.shopName : "No shop yet";
+				$("#who").textContent = state.user ? state.user.fullName + " · @" + state.user.username : "";
+				// replaceState, not location.hash: assigning the hash would fire
+				// hashchange and render the dashboard twice on first load.
+				if (!location.hash) history.replaceState(null, "", "#/inventory");
+				await route();
+			}
+
+			function currentShop() {
+				return state.shops.find((shop) => shop.id === state.shopId) || state.shops[0] || null;
+			}
+
+			/* ------------------------------------------------------------ router */
+
+			// Same three tabs as the app. Sell and Payments are pushed screens there,
+			// so they are here too: no extra nav items, and the parent tab stays lit.
+			const routes = {
+				inventory: { title: "Inventory", nav: "inventory", render: renderInventory },
+				finance: { title: "Finance", nav: "finance", render: renderFinance },
+				sell: { title: "New sale", nav: "inventory", parent: "inventory", render: renderSell },
+				payments: { title: "Payments", nav: "finance", parent: "finance", render: renderPayments },
+				profile: { title: "Profile", nav: "profile", render: renderProfile },
+			};
+
+			async function route() {
+				if (!state.user) return;
+				const name = (location.hash.replace(/^#\/?/, "").split("?")[0] || "inventory").toLowerCase();
+				const page = routes[name] || routes.inventory;
+
+				$$("#nav a").forEach((link) => {
+					if (link.dataset.route === page.nav) link.setAttribute("aria-current", "page");
+					else link.removeAttribute("aria-current");
+				});
+
+				const back = $("#back-button");
+				back.hidden = !page.parent;
+				back.dataset.goto = page.parent ? "#/" + page.parent : "";
+
+				$("#page-title").textContent = page.title;
+				$("#page-sub").textContent = "";
+				$("#top-actions").innerHTML = "";
+				const view = $("#view");
+				view.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+
+				try {
+					await page.render(view);
+				} catch (error) {
+					view.innerHTML =
+						'<div class="card"><p class="form-error">' + esc(error.message) + "</p>" +
+						'<button class="btn" type="button" data-action="reload">Try again</button></div>';
+				}
+			}
+
+			function go(hash) {
+				if (location.hash === hash) route();
+				else location.hash = hash;
+			}
+
+			/* --------------------------------------------------------- loading */
+
+			async function loadProducts() {
+				const shop = currentShop();
+				if (!shop) return [];
+				const data = await api("/shops/" + shop.id + "/products?limit=500");
+				state.products = data.products || [];
+				return state.products;
+			}
+
+			async function loadPayments(options) {
+				const shop = currentShop();
+				if (!shop) return { transactions: [], totals: { inMinor: 0, outMinor: 0, netMinor: 0 } };
+				const params = new URLSearchParams();
+				params.set("limit", "200");
+				const from = options && options.from;
+				if (from) params.set("from", String(from));
+				if (options && options.businessOnly) params.set("businessOnly", "true");
+				return api("/shops/" + shop.id + "/transactions?" + params.toString());
+			}
+
+			/* --------------------------------------------------------- finance */
+
+			const MONTH_NAMES = [
+				"January",
+				"February",
+				"March",
+				"April",
+				"May",
+				"June",
+				"July",
+				"August",
+				"September",
+				"October",
+				"November",
+				"December",
+			];
+
+			const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+			async function renderFinance(view) {
+				const shop = currentShop();
+				if (!shop) return renderNoShop(view);
+
+				const monthStart = new Date();
+				monthStart.setDate(1);
+				monthStart.setHours(0, 0, 0, 0);
+
+				const [month, recent, credit] = await Promise.all([
+					loadPayments({ from: monthStart.getTime(), businessOnly: true }),
+					loadPayments({ from: Date.now() - 90 * 86400000 }),
+					api("/shops/" + shop.id + "/credit"),
+				]);
+
+				const profile = (credit && credit.creditProfile) || { score: 0, factors: [], riskFlags: [] };
+				const totals = month.totals || { inMinor: 0, outMinor: 0, netMinor: 0 };
+				const currency = (recent.transactions[0] && recent.transactions[0].currency) || "BDT";
+				const monthRows = month.transactions || [];
+				const recentRows = (recent.transactions || []).slice(0, 5);
+
+				$("#page-sub").textContent = shop.shopName;
+				$("#top-actions").innerHTML =
+					'<button class="btn" type="button" data-action="reload">Refresh</button>';
+
+				view.innerHTML =
+					// 1. Cash flow
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Cash flow</h2>' +
+					'<p class="small muted">' + esc(MONTH_NAMES[new Date().getMonth()]) + " so far</p></div>" +
+					"</div>" +
+					(monthRows.length
+						? '<div class="flow">' +
+						"<div><p class=\"small muted\">Money in</p>" +
+						'<p class="flow-figure in">' + esc(formatMinor(totals.inMinor, currency)) + "</p></div>" +
+						"<div><p class=\"small muted\">Money out</p>" +
+						'<p class="flow-figure out">' + esc(formatMinor(totals.outMinor, currency)) + "</p></div>" +
+						"</div>" +
+						'<div class="total-row"><span class="muted small">Net this month</span>' +
+						'<span class="big ' + (totals.netMinor >= 0 ? "in" : "out") + '">' +
+						(totals.netMinor >= 0 ? "+" : "-") +
+						esc(formatMinor(Math.abs(totals.netMinor), currency)) + "</span></div>" +
+						'<p class="small muted">' + monthRows.length + " transaction" +
+						(monthRows.length === 1 ? "" : "s") + " recorded</p>"
+						: '<p class="small muted">No payments recorded this month yet. Sync your messages or add ' +
+						"one manually to see your cash flow.</p>") +
+					"</section>" +
+
+					// 2. Payments
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Payments</h2>' +
+					'<p class="small muted">SMS and manual entries · mark a row personal to exclude it</p></div>' +
+					'<a class="btn small" href="#/payments">See all payments</a></div>' +
+					(recentRows.length
+						? '<div class="list">' + recentRows.map(paymentRow).join("") + "</div>"
+						: '<p class="small muted">No payments recorded yet. Sync your SMS inbox or import a ' +
+						"sale to get started.</p>") +
+					"</section>" +
+
+					// 3. Credit profile
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Credit profile</h2>' +
+					'<p class="small muted">Based on the last 90 days of recorded payments</p></div>' +
+					'<span class="chip quiet">' + (credit.windowDays || 90) + " day window</span></div>" +
+					creditBlock(profile, currency) +
+					"</section>" +
+
+					// 4. Payment messages (the phone does the reading)
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Payment messages</h2>' +
+					'<p class="small muted">Read on your phone</p></div></div>' +
+					'<p class="small muted">Automatic payment records are created by the Android app, the only ' +
+					"place that can read your SMS inbox. Everything it imports shows up here — and a sale " +
+					"made here can link to one of those messages.</p>" +
+					"</section>" +
+
+					'<p class="small muted" style="text-align:center">GreenBiz is a record-keeping copilot. It is not ' +
+					"a lender, and nothing here is an offer of credit.</p>";
+			}
+
+			/** Red under 40, amber to 69, green from 70 — the app's score bands. */
+			function scoreBand(score) {
+				if (score >= 70) return { label: "Strong", color: "var(--in)" };
+				if (score >= 40) return { label: "Building", color: "var(--warn)" };
+				if (score > 0) return { label: "Early", color: "var(--out)" };
+				return { label: "No data yet", color: "var(--out)" };
+			}
+
+			function factorName(name) {
+				return (
+					{
+						consistency: "Consistency",
+						volume: "Sales volume",
+						stability: "Stability",
+						activity: "Activity",
+					}[name] || name || "Factor"
+				);
+			}
+
+			/** The app's risk flags, written out as sentences. */
+			function riskExplanations(flags) {
+				const text = {
+					no_activity: "No transactions recorded in the last 90 days yet.",
+					no_inflow: "No money coming in has been recorded yet.",
+					insufficient_history:
+						"Fewer than 10 transactions so far — more history gives a steadier score.",
+					low_activity: "Sales are concentrated in a few days. Recording more days helps.",
+					high_volatility: "Monthly revenue swings a lot. Lenders prefer steadier months.",
+					revenue_declining: "Revenue is down more than 30% versus the previous month.",
+					counterparty_concentration:
+						"Most revenue comes from one payer, which is a concentration risk.",
+				};
+				return (flags || []).map((flag) => text[flag] || String(flag).replace(/_/g, " "));
+			}
+
+			function creditBlock(profile, currency) {
+				const score = Math.max(0, Math.min(100, Number(profile.score) || 0));
+				const band = scoreBand(score);
+				const factors = profile.factors || [];
+				const swing = Math.round((Number(profile.monthlyVolatility) || 0) * 100);
+				const explanations = riskExplanations(profile.riskFlags);
+
+				return (
+					'<div class="score-wrap">' +
+					'<div class="score-ring" style="--pct: ' + score + "; --ring: " + band.color + '">' +
+					"<span>" + score + '<span class="of">out of 100</span></span>' +
+					"</div>" +
+					"<div>" +
+					'<span class="chip" style="background: ' + band.color +
+					'; color: #fff; border-color: transparent">' + esc(band.label) + "</span>" +
+					'<p class="card-head" style="margin: 10px 0 2px"><strong>' +
+					esc(formatMinorCompact(profile.monthlyRevenueAvgMinor || 0, currency)) +
+					" average monthly money in</strong></p>" +
+					'<p class="small muted">' + (profile.transactionCount90d || 0) + " transactions · " +
+					swing + "% monthly swing</p>" +
+					"</div>" +
+					"</div>" +
+					(factors.length
+						? '<p class="small" style="margin-top:16px;font-weight:600">What shapes your score</p>' +
+						'<div class="bars" style="margin-top:10px">' +
+						factors
+							.map((factor) => {
+								const value = Math.max(0, Math.min(100, Number(factor.score) || 0));
+								const weight = Math.round((Number(factor.weight) || 0) * 100);
+								return (
+									'<div class="bar"><div class="bar-head">' +
+									"<span>" + esc(factorName(factor.name)) + "</span>" +
+									"<span>" + value + "/100 · " + weight + "% weight</span></div>" +
+									'<div class="track"><div class="fill" style="width: ' + value +
+									"%; background: " + scoreBand(value).color + '"></div></div></div>'
+								);
+							})
+							.join("") +
+						"</div>"
+						: "") +
+					(explanations.length
+						? '<p class="small" style="margin-top:16px;font-weight:600">What to work on</p>' +
+						'<div style="margin-top:8px">' +
+						explanations
+							.map((line) => '<p class="small muted" style="margin-bottom:6px">' + esc(line) + "</p>")
+							.join("") +
+						"</div>"
+						: "") +
+					'<p class="small muted" style="margin-top:14px;font-style:italic">This is a behavioural score ' +
+					"built from your own records. It is not a credit bureau score, and it is not a lending decision.</p>"
+				);
+			}
+
+			/** "Walk-in customer" or "Unnamed payer"/"Unnamed payee", as in the app. */
+			function counterpartyLabel(transaction) {
+				const value = String(transaction.counterparty || "").trim();
+				if (value) return value;
+				return transaction.direction === "in" ? "Unnamed payer" : "Unnamed payee";
+			}
+
+			/** "17 Oct, 12:05 pm" — the app's date format. */
+			function dateLabel(ms) {
+				const date = new Date(Number(ms) || 0);
+				const hours = date.getHours();
+				const suffix = hours < 12 ? "am" : "pm";
+				const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+				const minutes = String(date.getMinutes()).padStart(2, "0");
+				return date.getDate() + " " + MONTH_SHORT[date.getMonth()] + ", " + hour12 + ":" + minutes + " " + suffix;
+			}
+
+			/** One row of the Finance tab's Payments card. */
+			function paymentRow(transaction) {
+				const isIn = transaction.direction === "in";
+				const method = methodText(transaction);
+				const chips =
+					(transaction.smsId ? '<span class="chip brand">SMS</span>' : "") +
+					(transaction.isBusiness === false ? ' <span class="chip warn">Personal</span>' : "");
+
+				return (
+					'<div class="item" style="grid-template-columns:20px minmax(0,1fr) auto">' +
+					'<div class="arrow ' + (isIn ? "in" : "out") + '">' + (isIn ? "↙" : "↗") + "</div>" +
+					"<div>" +
+					'<div class="title">' + esc(counterpartyLabel(transaction)) + "</div>" +
+					'<div class="sub">' + esc(dateLabel(transaction.occurredAt)) + " · " + esc(method) + "</div>" +
+					"</div>" +
+					'<div class="item-end">' +
+					'<div class="amount ' + (isIn ? "in" : "out") + '">' + (isIn ? "+" : "-") +
+					esc(moneyOf(transaction)) + "</div>" +
+					(chips ? '<div class="chips" style="justify-content:flex-end">' + chips + "</div>" : "") +
+					"</div>" +
+					"</div>"
+				);
+			}
+
+			function emptyState(message) {
+				return '<p class="empty">' + esc(message) + "</p>";
+			}
+
+			function renderNoShop(view) {
+				$("#top-actions").innerHTML =
+					'<button class="btn primary" type="button" data-action="new-shop">Add shop</button>';
+				view.innerHTML =
+					'<section class="card"><h2>No shop yet</h2>' +
+					'<p class="small muted" style="margin: 8px 0 14px">Add a shop to start tracking inventory and ' +
+					"payments.</p>" +
+					'<div class="chips"><button class="btn primary" type="button" data-action="new-shop">' +
+					"Add shop</button></div></section>";
+			}
+
+			/* ------------------------------------------------------- inventory */
+
+			async function renderInventory(view) {
+				const shop = currentShop();
+				if (!shop) return renderNoShop(view);
+
+				const products = await loadProducts();
+				const currency = firstCurrency(products, "BDT");
+				const summary = {
+					count: products.length,
+					valueMinor: products.reduce(
+						(sum, product) => sum + Math.round(product.unitPriceMinor * Number(product.stockQuantity)),
+						0,
+					),
+					outOfStock: products.filter((product) => Number(product.stockQuantity) <= 0).length,
+					low: products.filter((product) => {
+						const stock = Number(product.stockQuantity);
+						return stock > 0 && stock <= LOW_STOCK_AT;
+					}).length,
+				};
+
+				$("#page-sub").textContent = shop.shopName;
+				$("#top-actions").innerHTML =
+					'<button class="btn" type="button" data-action="new-product">Add product</button>' +
+					'<button class="btn primary" type="button" data-goto="#/sell">Sell</button>';
+
+				view.innerHTML =
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Stock at a glance</h2>' +
+					'<p class="small muted">' + summary.count + " product" +
+					(summary.count === 1 ? "" : "s") + " tracked</p></div>" +
+					'<div class="chips">' +
+					(summary.outOfStock
+						? '<span class="chip warn">' + summary.outOfStock + " out of stock</span>"
+						: "") +
+					(summary.low ? '<span class="chip warn">' + summary.low + " running low</span>" : "") +
+					"</div>" +
+					"</div>" +
+					'<p class="stock-value">' + esc(formatMinor(summary.valueMinor, currency)) + "</p>" +
+					'<p class="small muted">total stock value</p>' +
+					"</section>" +
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Products</h2>' +
+					'<p class="small muted">Prices are what the customer pays</p></div></div>' +
+					(products.length
+						? '<div class="list">' + products.map((product) => productRow(product, currency)).join("") + "</div>"
+						: '<p class="empty">Add your first product to get started.</p>' +
+						'<div class="chips" style="justify-content:center">' +
+						'<button class="btn primary" type="button" data-action="new-product">Add product</button></div>') +
+					"</section>";
+			}
+
+			function firstCurrency(products, fallback) {
+				const withCurrency = (products || []).find((product) => product.currency);
+				return (withCurrency && withCurrency.currency) || fallback;
+			}
+
+			function productRow(product, currency) {
+				const stock = Number(product.stockQuantity);
+				const out = stock <= 0;
+				const low = stock > 0 && stock <= LOW_STOCK_AT;
+
+				return (
+					'<div class="item">' +
+					'<div class="avatar">' + esc(initials(product.productName)) + "</div>" +
+					"<div>" +
+					'<div class="title">' + esc(product.productName) + "</div>" +
+					'<div class="sub">' + esc(formatMinor(product.unitPriceMinor, currency)) +
+					" / " + esc(product.unit) + "</div>" +
+					"</div>" +
+					'<div class="item-end">' +
+					'<div class="stock ' + (out ? "out" : low ? "low" : "in") + '">' +
+					esc(quantityLabel(stock)) + "</div>" +
+					'<div class="small muted">in stock</div>' +
+					'<div class="chips" style="justify-content:flex-end; margin-top: 4px">' +
+					'<button class="btn small ghost" type="button" data-action="edit-product" data-id="' +
+					esc(product.id) + '">Edit</button>' +
+					'<button class="btn small ghost danger" type="button" data-action="delete-product" data-id="' +
+					esc(product.id) + '">Delete</button>' +
+					"</div>" +
+					"</div>" +
+					"</div>"
+				);
+			}
+
+			/* ------------------------------------------------------------ sell */
+
+			async function renderSell(view) {
+				const shop = currentShop();
+				if (!shop) return renderNoShop(view);
+
+				const products = await loadProducts();
+				const currency = firstCurrency(products, "BDT");
+				const lines = state.sell.lines;
+				const totalMinor = cartTotalMinor();
+				const query = state.sell.query.trim().toLowerCase();
+				const matches = (query
+					? products.filter((product) => String(product.productName || "").toLowerCase().includes(query))
+					: products
+				).slice(0, 40);
+
+				$("#page-sub").textContent = shop.shopName;
+				$("#top-actions").innerHTML = lines.length
+					? '<button class="btn ghost" type="button" data-action="clear-cart">Clear receipt</button>'
+					: "";
+
+				view.innerHTML =
+					'<div class="sell">' +
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Add products</h2>' +
+					'<p class="small muted">Search your inventory' +
+					(products.length
+						? " · " + products.length + " product" + (products.length === 1 ? "" : "s")
+						: "") + "</p></div></div>" +
+					'<input id="sell-search" placeholder="Search by name" value="' + esc(state.sell.query) + '" />' +
+					'<div class="pick" id="sell-pick">' +
+					(matches.length
+						? matches
+							.map((product) => {
+								const out = Number(product.stockQuantity) <= 0;
+								return (
+									'<button type="button" data-action="add-to-cart" data-id="' +
+									esc(product.id) + '"' + (out ? " disabled" : "") + ">" +
+									'<span><span class="name">' + esc(product.productName) + "</span>" +
+									'<div class="sub small muted">' +
+									(out
+										? "out of stock"
+										: esc(quantityLabel(Number(product.stockQuantity))) + " " + esc(product.unit) + " left") +
+									"</div></span>" +
+									'<span class="mono small">' + esc(formatMinor(product.unitPriceMinor, currency)) +
+									"</span></button>"
+								);
+							})
+							.join("")
+						: emptyState(
+							products.length
+								? 'Nothing in your inventory matches "' + state.sell.query.trim() + '".'
+								: "No products yet. Add one from the Inventory tab first.",
+						)) +
+					"</div>" +
+					"</section>" +
+
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Receipt</h2>' +
+					'<p class="small muted">' +
+					(lines.length
+						? lines.length + " item" + (lines.length === 1 ? "" : "s") +
+						" · stock will be reduced when you confirm"
+						: "Nothing added yet") + "</p></div></div>" +
+					'<div class="cart">' +
+					(lines.length
+						? lines
+							.map((line, index) =>
+								'<div class="cart-line">' +
+								"<div><div class=\"title\">" + esc(line.product.productName) + "</div>" +
+								'<div class="sub small muted">' + esc(formatMinor(line.product.unitPriceMinor, currency)) +
+								" / " + esc(line.product.unit) + " · " +
+								esc(formatMinor(Math.round(line.product.unitPriceMinor * line.quantity), currency)) +
+								"</div></div>" +
+								'<div class="qty">' +
+								'<button type="button" data-action="qty-down" data-index="' + index +
+								'" aria-label="One less">−</button>' +
+								"<span>" + esc(quantityLabel(line.quantity)) + "</span>" +
+								'<button type="button" data-action="qty-up" data-index="' + index +
+								'" aria-label="One more">+</button>' +
+								"</div>" +
+								'<button class="btn small ghost danger" type="button" data-action="remove-line" data-index="' +
+								index + '" aria-label="Remove">×</button>' +
+								"</div>",
+							)
+							.join("")
+						: emptyState("Tap a product above to add it.")) +
+					"</div>" +
+					'<div class="total-row"><span class="muted small">Total</span>' +
+					'<span class="big">' + esc(formatMinor(totalMinor, currency)) + "</span></div>" +
+					'<label style="margin-top:14px">Customer name (optional)' +
+					'<input id="sell-customer" maxlength="120" placeholder="Walk-in customer" value="' +
+					esc(state.sell.customer) + '" />' +
+					"</label>" +
+					paymentBlock(totalMinor, currency) +
+					"</section>" +
+					"</div>";
+
+				const search = $("#sell-search");
+				if (search) {
+					if (state.focusSearch === "sell") {
+						state.focusSearch = null;
+						search.focus();
+						search.setSelectionRange(search.value.length, search.value.length);
+					}
+					search.addEventListener("input", () => {
+						state.sell.query = search.value;
+						state.focusSearch = "sell";
+						renderSell($("#view")).catch(reportError);
+					});
+				}
+			}
+
+			/** Cash on one side, mobile money on the other — the app's two swipe halves. */
+			function paymentBlock(totalMinor, currency) {
+				const mobile = state.sell.payment === "mobile";
+				return (
+					'<div style="margin-top:18px">' +
+					'<p class="small muted" style="margin-bottom:8px">How did the customer pay?</p>' +
+					'<div class="chips">' +
+					'<button type="button" class="chip-btn" data-action="pick-payment" data-payment="cash" aria-pressed="' +
+					String(!mobile) + '">Cash</button>' +
+					'<button type="button" class="chip-btn" data-action="pick-payment" data-payment="mobile" aria-pressed="' +
+					String(mobile) + '">Mobile money</button>' +
+					"</div>" +
+					(mobile
+						? mobileMoneyBlock(totalMinor, currency)
+						: '<p class="hint" style="margin-top:8px">Cash needs nothing else: confirm and the money is in the ledger.</p>') +
+					'<div class="chips" style="margin-top:16px; align-items:center">' +
+					'<button class="btn primary" type="button" data-action="confirm-sale"' +
+					(state.sell.lines.length ? "" : " disabled") + ">Confirm sale</button>" +
+					'<span class="small muted">' + esc(formatMinor(totalMinor, currency)) + "</span>" +
+					"</div>" +
+					"</div>"
+				);
+			}
+
+			function mobileMoneyBlock(totalMinor, currency) {
+				const messages = state.sell.messages;
+				const method = state.sell.method;
+				const heading =
+					state.sell.window === "recent"
+						? "Payment messages · last " + SUGGEST_MINUTES + " minutes"
+						: "Payment messages · last " + HISTORY_DAYS + " days";
+
+				return (
+					'<div style="margin-top:16px">' +
+					'<div class="card-head" style="margin-bottom:6px">' +
+					'<p class="small muted">' + esc(heading) + "</p>" +
+					'<div class="chips">' +
+					(state.sell.window === "recent"
+						? '<button class="btn small ghost" type="button" data-action="sms-history">Look further back</button>'
+						: '<button class="btn small ghost" type="button" data-action="sms-recent">Last ' +
+						SUGGEST_MINUTES + " minutes</button>") +
+					"</div>" +
+					"</div>" +
+					'<p class="hint">Picking a method shows your recent payment messages, so you can attach the ' +
+					"one that matches this sale. A payment inside the cash-out band counts as this sale — the " +
+					"ledger links it instead of counting the money twice.</p>" +
+					'<div class="sms-list">' +
+					(messages.length
+						? messages
+							.map((message) => {
+								const fit = amountFit(message.amountMinor, totalMinor);
+								const chip =
+									fit.fit === "exact"
+										? '<span class="chip good">Matches total</span>'
+										: fit.fit === "cashOut"
+											? '<span class="chip warn">' +
+											(fit.difference > 0 ? "+" : "-") +
+											esc(formatMinor(Math.abs(fit.difference), currency, true)) +
+											" cash-out</span>"
+											: '<span class="chip quiet">Different amount</span>';
+								return (
+									'<button type="button" class="sms-row" data-action="link-sms" data-id="' +
+									esc(message.smsId) + '" aria-pressed="' +
+									String(state.sell.smsId === message.smsId) + '">' +
+									'<span><span class="name">' + esc(methodText(message)) + " · " +
+									esc(moneyOf(message)) + "</span>" +
+									'<div class="sub small muted">' + esc(relativeTime(message.occurredAt)) +
+									(message.reference ? " · " + esc(message.reference) : "") +
+									"</div></span>" +
+									"<span>" + chip + "</span></button>"
+								);
+							})
+							.join("")
+						: emptyState(
+							"No payment in the last " + SUGGEST_MINUTES + " minutes. Tap Look further back.",
+						)) +
+					"</div>" +
+					'<p class="small muted" style="margin:14px 0 6px">or choose the method</p>' +
+					'<div class="chips">' +
+					METHODS.filter((entry) => entry.value !== "cash")
+						.map(
+							(entry) =>
+								'<button type="button" class="chip-btn" data-action="pick-method" data-method="' +
+								entry.value + '" aria-pressed="' + String(method === entry.value) + '">' +
+								esc(entry.label) + "</button>",
+						)
+						.join("") +
+					"</div>" +
+					'<label style="margin-top:12px">TrxID (optional)' +
+					'<input id="sell-reference" maxlength="64" placeholder="Link a message above, or type the TrxID" value="' +
+					esc(state.sell.reference) + '" />' +
+					"</label>" +
+					(method
+						? '<p class="hint" style="margin-top:10px">' +
+						(state.sell.smsId
+							? "Linked to the " + esc(methodLabel(method)) + " payment message."
+							: "Recording " + esc(methodLabel(method)) + " without a message.") +
+						"</p>"
+						: "") +
+					"</div>"
+				);
+			}
+
+			async function loadSmsMessages() {
+				const shop = currentShop();
+				if (!shop) return [];
+				const windowMs = state.sell.window === "recent" ? SUGGEST_WINDOW_MS : HISTORY_WINDOW_MS;
+				const data = await api(
+					"/shops/" + shop.id + "/transactions?direction=in&limit=100&from=" + (Date.now() - windowMs),
+				);
+				const rows = (data.transactions || []).filter((row) => row.smsId);
+				rows.sort((a, b) => b.occurredAt - a.occurredAt);
+				return rows;
+			}
+
+			/* -------------------------------------------------------- payments */
+
+			async function renderPayments(view) {
+				const shop = currentShop();
+				if (!shop) return renderNoShop(view);
+				const data = await loadPayments({ from: Date.now() - 90 * 86400000 });
+				const all = data.transactions || [];
+				const filter = state.paymentsFilter;
+				const rows = all.filter((row) => {
+					if (filter === "sms") return Boolean(row.smsId);
+					if (filter === "manual") return !row.smsId;
+					if (filter === "personal") return row.isBusiness === false;
+					return true;
+				});
+
+				$("#page-sub").textContent = shop.shopName;
+				$("#top-actions").innerHTML =
+					'<button class="btn" type="button" data-action="new-payment">Add a payment</button>';
+
+				view.innerHTML =
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Payments</h2>' +
+					'<p class="small muted">SMS and manual entries · last 90 days · ' + all.length +
+					" rows</p></div></div>" +
+					'<div class="chips" style="margin-bottom: 12px">' +
+					[
+						{ key: "all", label: "All" },
+						{ key: "sms", label: "SMS" },
+						{ key: "manual", label: "Manual" },
+						{ key: "personal", label: "Personal" },
+					]
+						.map(
+							(option) =>
+								'<button type="button" class="chip-btn" data-action="filter-payments" data-filter="' +
+								option.key + '" aria-pressed="' + String(filter === option.key) + '">' +
+								esc(option.label) + "</button>",
+						)
+						.join("") +
+					"</div>" +
+					(rows.length
+						? '<div class="list">' + rows.map(paymentManageRow).join("") + "</div>"
+						: '<p class="small muted">' +
+						(filter === "all"
+							? "No payments recorded yet. Sync your SMS inbox or import a sale to get started."
+							: "Nothing in this filter yet.") +
+						"</p>") +
+					"</section>";
+			}
+
+			function paymentManageRow(transaction) {
+				const isIn = transaction.direction === "in";
+				const business = transaction.isBusiness !== false;
+				const method = methodText(transaction);
+
+				return (
+					'<div class="item">' +
+					'<div class="avatar">' + esc(initials(transaction.counterparty || method)) + "</div>" +
+					"<div>" +
+					'<div class="title">' + esc(counterpartyLabel(transaction)) + "</div>" +
+					'<div class="sub">' + esc(dateLabel(transaction.occurredAt)) + " · " + esc(method) +
+					(transaction.reference ? " · " + esc(transaction.reference) : "") + "</div>" +
+					'<div class="chips" style="margin-top: 6px">' +
+					'<span class="chip brand">' + (transaction.smsId ? "SMS" : "Manual") + "</span>" +
+					'<span class="chip ' + (business ? "good" : "warn") + '">' +
+					(business ? "Business" : "Personal") + "</span>" +
+					"</div>" +
+					"</div>" +
+					'<div class="item-end">' +
+					'<div class="amount ' + (isIn ? "in" : "out") + '">' + (isIn ? "+" : "-") +
+					esc(moneyOf(transaction)) + "</div>" +
+					'<div class="chips" style="justify-content:flex-end; margin-top: 6px">' +
+					'<button class="chip-btn" type="button" data-action="toggle-business" data-id="' +
+					esc(transaction.id) + '" data-value="' + String(!business) + '">' +
+					(business ? "Mark as personal" : "Mark as business") + "</button>" +
+					'<button class="chip-btn" type="button" data-action="delete-payment" data-id="' +
+					esc(transaction.id) + '">Delete</button>' +
+					"</div>" +
+					"</div>" +
+					"</div>"
+				);
+			}
+
+			/* --------------------------------------------------------- profile */
+
+			async function renderProfile(view) {
+				const user = state.user || {};
+				const shop = currentShop();
+				const shopCount = state.shops.length;
+
+				$("#page-sub").textContent = shop ? shop.shopName : "";
+				$("#top-actions").innerHTML =
+					'<button class="btn ghost" type="button" data-action="logout">Log out</button>';
+
+				view.innerHTML =
+					'<section class="card">' +
+					'<div class="account">' +
+					'<div class="avatar big">' + esc(initials(user.fullName)) + "</div>" +
+					"<div>" +
+					'<div class="title">' + esc(user.fullName || "") + "</div>" +
+					'<div class="sub">@' + esc(user.username || "") + "</div>" +
+					(user.email ? '<div class="sub">' + esc(user.email) + "</div>" : "") +
+					"</div>" +
+					"</div>" +
+					"</section>" +
+
+					'<section class="card">' +
+					'<div class="card-head"><div><h2>Your shops</h2>' +
+					'<p class="small muted">' +
+					(shopCount
+						? shopCount + " shop" + (shopCount === 1 ? "" : "s") + " · " +
+						esc(shop ? shop.shopName : "") + " is active"
+						: "No shops yet") + "</p></div>" +
+					'<button class="btn small" type="button" data-action="new-shop">Add shop</button>' +
+					"</div>" +
+					(shopCount
+						? '<div class="list">' + state.shops.map(shopRow).join("") + "</div>"
+						: '<p class="small muted">Add a shop to start tracking inventory and payments.</p>') +
+					(shop
+						? '<form id="shop-update-form" class="form" style="margin-top: 16px">' +
+						'<div class="row">' +
+						'<label>Shop name<input name="shopName" required maxlength="120" value="' +
+						esc(shop.shopName) + '" /></label>' +
+						'<label>Business type<input name="businessType" maxlength="60" value="' +
+						esc(shop.businessType || "") + '" /></label>' +
+						"</div>" +
+						'<p class="form-error" data-error></p>' +
+						'<div class="chips"><button class="btn" type="submit">Save shop</button></div>' +
+						"</form>"
+						: "") +
+					"</section>" +
+
+					'<section class="card">' +
+					'<div class="card-head"><h2>Data &amp; privacy</h2></div>' +
+					privacyItems()
+						.map(
+							(item) =>
+								'<div style="margin-bottom: 14px">' +
+								'<p class="small" style="font-weight: 600">' + esc(item.title) + "</p>" +
+								'<p class="small muted">' + esc(item.body) + "</p></div>",
+						)
+						.join("") +
+					"</section>" +
+
+					'<section class="card">' +
+					'<div class="card-head"><h2>Session</h2></div>' +
+					'<div class="list">' +
+					detailRow("Signed in as", "@" + (user.username || "—")) +
+					detailRow("Signed in on", "This browser") +
+					"</div>" +
+					'<div class="chips" style="margin-top: 12px">' +
+					'<button class="btn ghost danger" type="button" data-action="logout">Log out</button>' +
+					"</div>" +
+					'<p class="small muted" style="margin-top: 10px">Your records stay on the server and will be ' +
+					"here when you sign back in.</p>" +
+					"</section>";
+			}
+
+			function shopRow(shop) {
+				const active = shop.id === state.shopId;
+				return (
+					'<div class="item">' +
+					'<div class="avatar">' + esc(initials(shop.shopName)) + "</div>" +
+					"<div>" +
+					'<div class="title">' + esc(shop.shopName) +
+					(active ? ' <span class="chip good">Active</span>' : "") + "</div>" +
+					'<div class="sub">' + esc(shop.businessType || "retail") + "</div>" +
+					"</div>" +
+					'<div class="chips">' +
+					(active
+						? ""
+						: '<button class="chip-btn" type="button" data-action="select-shop" data-id="' +
+						esc(shop.id) + '">Make active</button>') +
+					'<button class="chip-btn" type="button" data-action="delete-shop" data-id="' +
+					esc(shop.id) + '">Delete</button>' +
+					"</div>" +
+					"</div>"
+				);
+			}
+
+			function privacyItems() {
+				return [
+					{
+						title: "Only payment confirmations are uploaded",
+						body:
+							"Messages are filtered on the phone. Personal messages, one-time passwords and " +
+							"promotions never leave the device.",
+					},
+					{
+						title: "Your raw messages stay private to your account",
+						body:
+							"They are stored against your shop so you can reconcile them. They are never sold and " +
+							"never shared with a lender.",
+					},
+					{
+						title: "Lenders would only ever see aggregated signals",
+						body:
+							"If you apply for a loan, a lender sees your score and totals — not your messages and " +
+							"not your customers' phone numbers.",
+					},
+					{
+						title: "You can delete everything",
+						body: "Deleting a shop removes its messages, transactions and credit profile from the server.",
+					},
+				];
+			}
+
+			function detailRow(label, value) {
+				return (
+					'<div class="item" style="grid-template-columns: minmax(0,1fr) auto">' +
+					'<div class="sub">' + esc(label) + "</div>" +
+					'<div class="title">' + esc(value) + "</div></div>"
+				);
+			}
+
+			/* -------------------------------------------------------- actions */
+
+			function findProduct(id) {
+				return state.products.find((product) => product.id === id);
+			}
+
+			function cartTotalMinor() {
+				return state.sell.lines.reduce((sum, line) => sum + Math.round(line.product.unitPriceMinor * line.quantity), 0);
+			}
+
+			function addToCart(product) {
+				const existing = state.sell.lines.find((line) => line.product.id === product.id);
+				if (existing) {
+					existing.quantity = Math.min(existing.quantity + 1, Number(product.stockQuantity) || existing.quantity + 1);
+				} else {
+					state.sell.lines.push({ product, quantity: 1 });
+				}
+				renderSell($("#view")).catch(reportError);
+			}
+
+			function reportError(error) {
+				toast(error && error.message ? error.message : "Something went wrong", "error");
+			}
+
+			function openProductDialog(product) {
+				const dialog = $("#product-dialog");
+				const form = $("#product-form");
+				form.reset();
+				form.querySelector("[data-error]").textContent = "";
+				$("#product-dialog-title").textContent = product ? "Edit product" : "Add product";
+				form.querySelector('button[type="submit"]').textContent = product ? "Save changes" : "Add to inventory";
+				form.elements.productId.value = product ? product.id : "";
+				form.elements.productName.value = product ? product.productName : "";
+				form.elements.unit.value = product ? product.unit : "";
+				form.elements.price.value = product ? minorToInput(product.unitPriceMinor) : "";
+				form.elements.stock.value = product ? String(product.stockQuantity) : "0";
+				dialog.showModal();
+				setTimeout(() => form.elements.productName.focus(), 40);
+			}
+
+			function openPaymentDialog() {
+				const dialog = $("#payment-dialog");
+				const form = $("#payment-form");
+				form.reset();
+				form.querySelector("[data-error]").textContent = "";
+				const select = $("#payment-method-select");
+				select.innerHTML = METHODS.map((method) => '<option value="' + method.value + '">' + esc(method.label) + "</option>").join("");
+				dialog.showModal();
+				setTimeout(() => form.elements.amount.focus(), 40);
+			}
+
+			async function submitProductForm(form) {
+				const shop = currentShop();
+				if (!shop) return;
+				const errorNode = form.querySelector("[data-error]");
+				errorNode.textContent = "";
+
+				const id = form.elements.productId.value;
+				const name = form.elements.productName.value.trim();
+				const unit = form.elements.unit.value.trim();
+				const price = parseMoneyToMinor(form.elements.price.value);
+				const stock = parseQuantity(form.elements.stock.value);
+
+				if (!name) return (errorNode.textContent = "A product name is required.");
+				if (!unit) return (errorNode.textContent = "A unit is required, e.g. kg or piece.");
+				if (price === null) return (errorNode.textContent = "Enter the price as a number, e.g. 1250.00.");
+				if (stock === null) return (errorNode.textContent = "Enter the stock as a number.");
+
+				const submit = form.querySelector('button[type="submit"]');
+				submit.disabled = true;
+				try {
+					if (id) {
+						await api("/products/" + id, {
+							method: "PATCH",
+							body: { productName: name, unit, unitPriceMinor: price, stockQuantity: stock },
+						});
+						toast("Product updated");
+					} else {
+						await api("/shops/" + shop.id + "/products", {
+							method: "POST",
+							body: { productName: name, unit, unitPriceMinor: price, stockQuantity: stock },
+						});
+						toast("Added to inventory");
+					}
+					$("#product-dialog").close();
+					await loadProducts();
+					await route();
+				} catch (error) {
+					errorNode.textContent = error.message;
+				} finally {
+					submit.disabled = false;
+				}
+			}
+
+			async function submitPaymentForm(form) {
+				const shop = currentShop();
+				if (!shop) return;
+				const errorNode = form.querySelector("[data-error]");
+				errorNode.textContent = "";
+
+				const amount = parseMoneyToMinor(form.elements.amount.value);
+				if (amount === null || amount <= 0) return (errorNode.textContent = "Enter an amount greater than zero.");
+
+				const submit = form.querySelector('button[type="submit"]');
+				submit.disabled = true;
+				try {
+					await api("/shops/" + shop.id + "/transactions", {
+						method: "POST",
+						body: {
+							direction: form.elements.direction.value,
+							amountMinor: amount,
+							paymentMethod: form.elements.paymentMethod.value,
+							reference: form.elements.reference.value.trim() || undefined,
+							counterparty: form.elements.counterparty.value.trim() || undefined,
+							note: form.elements.note.value.trim() || undefined,
+						},
+					});
+					toast("Payment recorded");
+					$("#payment-dialog").close();
+					await route();
+				} catch (error) {
+					errorNode.textContent = error.message;
+				} finally {
+					submit.disabled = false;
+				}
+			}
+
+			async function confirmSale() {
+				const shop = currentShop();
+				if (!shop) return;
+				if (!state.sell.lines.length) return toast("Add a product first", "error");
+
+				const lines = state.sell.lines;
+				// Cash is one side of the confirm bar, mobile money the other: only a
+				// mobile-money sale carries a method, a TrxID or a linked message.
+				const method = state.sell.payment === "mobile" ? state.sell.method || "other" : "cash";
+				const reference = state.sell.payment === "mobile" ? (state.sell.reference || "").trim() : "";
+				const smsId = state.sell.payment === "mobile" ? state.sell.smsId || undefined : undefined;
+				const customer = (state.sell.customer || "").trim();
+
+				try {
+					const receipt = await api("/shops/" + shop.id + "/sales", {
+						method: "POST",
+						body: {
+							items: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
+							paymentMethod: method,
+							reference: reference || undefined,
+							smsId,
+							counterparty: customer || undefined,
+						},
+					});
+					resetReceipt();
+					showReceipt(receipt, method, reference, smsId);
+					await loadProducts();
+					await route();
+				} catch (error) {
+					reportError(error);
+				}
+			}
+
+			function resetReceipt() {
+				state.sell.lines = [];
+				state.sell.customer = "";
+				state.sell.payment = "cash";
+				state.sell.method = "";
+				state.sell.reference = "";
+				state.sell.smsId = null;
+				state.sell.messages = [];
+			}
+
+			function showReceipt(receipt, method, reference, smsId) {
+				const currency = receipt.currency || "BDT";
+				const items = receipt.items || [];
+				const received = receipt.transaction ? receipt.transaction.amountMinor : receipt.totalMinor;
+				const fit = amountFit(received, receipt.totalMinor);
+
+				$("#receipt-body").innerHTML =
+					"<h2>Sale recorded</h2>" +
+					'<p class="small muted">Paid by ' + esc(methodLabel(method)) +
+					(smsId ? " · linked to the payment message" : "") + "</p>" +
+					'<div class="list" style="margin-top: 8px">' +
+					items
+						.map(
+							(item) =>
+								'<div class="item" style="grid-template-columns: minmax(0,1fr) auto">' +
+								'<div><div class="title">' + esc(item.productName) + "</div>" +
+								'<div class="sub">' + esc(quantityLabel(Number(item.quantity))) + " " +
+								esc(item.unit) + " · " + esc(quantityLabel(Number(item.remainingStock))) +
+								" left</div></div>" +
+								'<div class="amount">' + esc(formatMinor(item.lineTotalMinor, currency)) +
+								"</div></div>",
+						)
+						.join("") +
+					"</div>" +
+					'<div class="total-row"><span class="muted small">Total</span><span class="big">' +
+					esc(formatMinor(receipt.totalMinor, currency)) + "</span></div>" +
+					(fit.fit === "cashOut"
+						? '<p class="hint">The message carried the cash-out charge: received ' +
+						esc(formatMinor(received, currency)) + " (" + (fit.difference > 0 ? "+" : "-") +
+						esc(formatMinor(Math.abs(fit.difference), currency)) + ").</p>"
+						: "") +
+					(reference ? '<p class="hint">TrxID ' + esc(reference) + "</p>" : "") +
+					(receipt.score !== null && receipt.score !== undefined
+						? '<p class="hint">Your credit score is now ' + esc(String(receipt.score)) + "/100.</p>"
+						: "") +
+					'<div class="dialog-actions"><button class="btn primary" type="button" data-close-dialog>Done</button></div>';
+				$("#receipt-dialog").showModal();
+			}
+
+			const actions = {
+				back: () => {
+					const target = $("#back-button").dataset.goto;
+					if (target) go(target);
+				},
+				logout: () => {
+					if (!confirm("Log out?\n\nYour records stay on the server and will be here when you sign back in.")) return;
+					signOut(true);
+				},
+				reload: () => route(),
+				"new-product": () => openProductDialog(null),
+				"edit-product": (trigger) => {
+					const product = findProduct(trigger.dataset.id);
+					if (product) openProductDialog(product);
+				},
+				"delete-product": async (trigger) => {
+					const product = findProduct(trigger.dataset.id);
+					if (!product) return;
+					if (!confirm('Delete "' + product.productName + '"? Past sales stay in the ledger.')) return;
+					await api("/products/" + product.id, { method: "DELETE" });
+					toast("Product deleted");
+					await loadProducts();
+					await route();
+				},
+				"add-to-cart": (trigger) => {
+					const product = findProduct(trigger.dataset.id);
+					if (product) addToCart(product);
+				},
+				"qty-up": (trigger) => {
+					const line = state.sell.lines[Number(trigger.dataset.index)];
+					if (!line) return;
+					const stock = Number(line.product.stockQuantity) || line.quantity;
+					line.quantity = Math.round(Math.min(stock, line.quantity + 1) * 1000) / 1000;
+					renderSell($("#view")).catch(reportError);
+				},
+				"qty-down": (trigger) => {
+					const index = Number(trigger.dataset.index);
+					const line = state.sell.lines[index];
+					if (!line) return;
+					line.quantity = Math.round((line.quantity - 1) * 1000) / 1000;
+					if (line.quantity <= 0) state.sell.lines.splice(index, 1);
+					renderSell($("#view")).catch(reportError);
+				},
+				"remove-line": (trigger) => {
+					state.sell.lines.splice(Number(trigger.dataset.index), 1);
+					renderSell($("#view")).catch(reportError);
+				},
+				"clear-cart": () => {
+					if (!state.sell.lines.length) return;
+					if (!confirm("Clear this receipt?\n\nThe items are removed. Nothing has been sold yet.")) return;
+					resetReceipt();
+					renderSell($("#view")).catch(reportError);
+				},
+				"pick-payment": async (trigger) => {
+					state.sell.payment = trigger.dataset.payment === "mobile" ? "mobile" : "cash";
+					if (state.sell.payment === "cash") {
+						state.sell.smsId = null;
+						state.sell.method = "";
+					} else {
+						state.sell.window = "recent";
+						try {
+							state.sell.messages = await loadSmsMessages();
+						} catch (error) {
+							state.sell.messages = [];
+						}
+					}
+					renderSell($("#view")).catch(reportError);
+				},
+				"pick-method": (trigger) => {
+					state.sell.payment = "mobile";
+					state.sell.method = trigger.dataset.method;
+					state.sell.smsId = null;
+					renderSell($("#view")).catch(reportError);
+				},
+				"link-sms": (trigger) => {
+					const smsId = trigger.dataset.id;
+					state.sell.smsId = state.sell.smsId === smsId ? null : smsId;
+					const message = state.sell.messages.find((row) => row.smsId === state.sell.smsId);
+					if (message) {
+						if (message.reference) state.sell.reference = message.reference;
+						if (message.paymentMethod) state.sell.method = message.paymentMethod;
+					}
+					renderSell($("#view")).catch(reportError);
+				},
+				"sms-history": async () => {
+					state.sell.window = "history";
+					state.sell.messages = await loadSmsMessages();
+					renderSell($("#view")).catch(reportError);
+				},
+				"sms-recent": async () => {
+					state.sell.window = "recent";
+					state.sell.messages = await loadSmsMessages();
+					renderSell($("#view")).catch(reportError);
+				},
+				"confirm-sale": () => confirmSale(),
+				"new-payment": () => openPaymentDialog(),
+				"filter-payments": (trigger) => {
+					state.paymentsFilter = trigger.dataset.filter;
+					renderPayments($("#view")).catch(reportError);
+				},
+				"toggle-business": async (trigger) => {
+					const business = trigger.dataset.value === "true";
+					await api("/transactions/" + trigger.dataset.id, {
+						method: "PATCH",
+						body: { isBusiness: business },
+					});
+					toast(
+						business
+							? "Marked as business. It counts toward your sales and score."
+							: "Marked as personal. It is excluded from business totals and your score.",
+					);
+					await route();
+				},
+				"delete-payment": async (trigger) => {
+					if (!confirm("Delete this payment?\n\nIt is removed from the ledger and from the credit score.")) return;
+					await api("/transactions/" + trigger.dataset.id, { method: "DELETE" });
+					toast("Payment deleted");
+					await route();
+				},
+				"new-shop": () => {
+					const name = prompt("Shop name");
+					if (name === null) return;
+					if (!name.trim()) return toast("A shop name is required", "error");
+					return createShopFromName(name.trim());
+				},
+				"select-shop": async (trigger) => {
+					state.shopId = trigger.dataset.id;
+					localStorage.setItem(SHOP_KEY, state.shopId);
+					$("#side-shop").textContent = (currentShop() || {}).shopName || "";
+					toast("Shop switched");
+					await route();
+				},
+				"delete-shop": async (trigger) => {
+					const shop = state.shops.find((entry) => entry.id === trigger.dataset.id);
+					if (!shop) return;
+					if (
+						!confirm(
+							'Delete "' + shop.shopName + '"?\n\nThis permanently deletes the shop along with its ' +
+							"inventory, synced messages, transactions and credit profile.",
+						)
+					)
+						return;
+					await api("/shops/" + shop.id, { method: "DELETE" });
+					state.shops = state.shops.filter((entry) => entry.id !== shop.id);
+					if (state.shopId === shop.id) {
+						state.shopId = state.shops.length ? state.shops[0].id : "";
+						localStorage.setItem(SHOP_KEY, state.shopId);
+					}
+					toast("Shop deleted");
+					await route();
+				},
+				"close-dialog": (trigger) => {
+					const dialog = trigger.closest("dialog");
+					if (dialog) dialog.close();
+				},
+			};
+
+			/* ---------------------------------------------------------- events */
+
+			document.addEventListener("click", (event) => {
+				const closeTrigger = event.target.closest("[data-close-dialog]");
+				if (closeTrigger) {
+					const dialog = closeTrigger.closest("dialog");
+					if (dialog) dialog.close();
+					return;
+				}
+
+				const goto = event.target.closest("[data-goto]");
+				if (goto) {
+					go(goto.dataset.goto);
+					return;
+				}
+
+				const authTab = event.target.closest("[data-auth-mode]");
+				if (authTab) {
+					setAuthMode(authTab.dataset.authMode);
+					return;
+				}
+
+				const trigger = event.target.closest("[data-action]");
+				if (!trigger) return;
+				const handler = actions[trigger.dataset.action];
+				if (!handler) return;
+				event.preventDefault();
+				try {
+					const result = handler(trigger);
+					if (result && typeof result.catch === "function") result.catch(reportError);
+				} catch (error) {
+					reportError(error);
+				}
+			});
+
+			document.addEventListener("submit", (event) => {
+				const form = event.target;
+				// Read the attribute, not form.id: a control named "id" shadows the
+				// property and would make this dispatcher miss every form.
+				const formId = form.getAttribute ? form.getAttribute("id") || "" : "";
+				if (formId === "login-form") {
+					event.preventDefault();
+					handleLogin(form).catch(reportError);
+					return;
+				}
+				if (formId === "register-form") {
+					event.preventDefault();
+					handleRegister(form).catch(reportError);
+					return;
+				}
+				if (formId === "product-form") {
+					event.preventDefault();
+					submitProductForm(form).catch(reportError);
+					return;
+				}
+				if (formId === "payment-form") {
+					event.preventDefault();
+					submitPaymentForm(form).catch(reportError);
+					return;
+				}
+				if (formId === "shop-form") {
+					event.preventDefault();
+					createShop(form).catch(reportError);
+					return;
+				}
+				if (formId === "shop-update-form") {
+					event.preventDefault();
+					updateShop(form).catch(reportError);
+				}
+			});
+
+			document.addEventListener("change", (event) => {
+				if (event.target.id !== "sell-reference") return;
+				state.sell.reference = event.target.value;
+			});
+
+			document.addEventListener("input", (event) => {
+				if (event.target.id === "sell-reference") state.sell.reference = event.target.value;
+				if (event.target.id === "sell-customer") state.sell.customer = event.target.value;
+			});
+
+			window.addEventListener("hashchange", () => {
+				if (state.user) route();
+			});
+
+			/* -------------------------------------------------------- auth ops */
+
+			async function handleLogin(form) {
+				const errorNode = form.querySelector("[data-error]");
+				const button = form.querySelector('button[type="submit"]');
+				errorNode.textContent = "";
+				button.disabled = true;
+				try {
+					const data = await api("/auth/login", {
+						method: "POST",
+						body: {
+							username: form.elements.username.value.trim(),
+							password: form.elements.password.value,
+						},
+					});
+					saveSession(data.token, "");
+					await boot();
+					toast("Welcome back");
+				} catch (error) {
+					errorNode.textContent = error.message;
+				} finally {
+					button.disabled = false;
+				}
+			}
+
+			async function handleRegister(form) {
+				const errorNode = form.querySelector("[data-error]");
+				const button = form.querySelector('button[type="submit"]');
+				errorNode.textContent = "";
+				button.disabled = true;
+				try {
+					const data = await api("/auth/register", {
+						method: "POST",
+						body: {
+							fullName: form.elements.fullName.value.trim(),
+							username: form.elements.username.value.trim(),
+							email: form.elements.email.value.trim() || undefined,
+							password: form.elements.password.value,
+							shopName: form.elements.shopName.value.trim() || undefined,
+						},
+					});
+					saveSession(data.token, data.shopId || "");
+					await boot();
+					toast("Account created");
+				} catch (error) {
+					errorNode.textContent = error.message;
+				} finally {
+					button.disabled = false;
+				}
+			}
+
+			async function createShop(form) {
+				const name = form.elements.shopName.value.trim();
+				if (!name) return;
+				await createShopFromName(name);
+			}
+
+			async function createShopFromName(name) {
+				const data = await api("/shops", { method: "POST", body: { shopName: name } });
+				state.shops = state.shops.concat([data.shop]);
+				state.shopId = data.shop.id;
+				localStorage.setItem(SHOP_KEY, state.shopId);
+				$("#side-shop").textContent = data.shop.shopName;
+				toast("Shop added.");
+				await route();
+			}
+
+			async function updateShop(form) {
+				const shop = currentShop();
+				if (!shop) return;
+				const errorNode = form.querySelector("[data-error]");
+				errorNode.textContent = "";
+				try {
+					const data = await api("/shops/" + shop.id, {
+						method: "PATCH",
+						body: {
+							shopName: form.elements.shopName.value.trim(),
+							businessType: form.elements.businessType.value.trim() || undefined,
+						},
+					});
+					state.shops = state.shops.map((entry) => (entry.id === data.shop.id ? data.shop : entry));
+					$("#side-shop").textContent = data.shop.shopName;
+					toast("Shop saved");
+					await route();
+				} catch (error) {
+					errorNode.textContent = error.message;
+				}
+			}
+
+			/* ----------------------------------------------------------- boot */
+
+			async function boot() {
+				if (!state.token) {
+					showAuth();
+					return;
+				}
+				try {
+					const data = await api("/auth/me");
+					state.user = data.user;
+					state.shops = data.shops || [];
+					if (!state.shops.some((shop) => shop.id === state.shopId)) {
+						state.shopId = state.shops.length ? state.shops[0].id : "";
+						localStorage.setItem(SHOP_KEY, state.shopId);
+					}
+					await showApp();
+				} catch (error) {
+					if (error.status === 401) {
+						signOut(false);
+						return;
+					}
+					showAuth();
+					const errorNode = $("#login-form [data-error]");
+					if (errorNode) errorNode.textContent = error.message;
+				}
+			}
+
+			boot();
+		})();
+	</script>
+</body>
+
+</html>

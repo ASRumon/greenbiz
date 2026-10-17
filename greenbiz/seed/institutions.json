@@ -1,0 +1,74 @@
+[
+    {
+        "id": "11111111-1111-4111-8111-000000000001",
+        "name": "BRAC Bank",
+        "institutionType": "commercial_bank",
+        "website": "https://www.bracbank.com/sme-banking/",
+        "description": "Private commercial bank with a dedicated SME division. Products in this table: Anonno, Druti, Tara Uddokta and Startup Builder.",
+        "contactPhone": null,
+        "isActive": true
+    },
+    {
+        "id": "11111111-1111-4111-8111-000000000002",
+        "name": "Sonali Bank",
+        "institutionType": "commercial_bank",
+        "website": "https://www.sonalibank.com.bd/",
+        "description": "State-owned commercial bank. General SME loan with collateral-free limits up to BDT 5 lac for men and BDT 25 lac for women.",
+        "contactPhone": null,
+        "isActive": true
+    },
+    {
+        "id": "11111111-1111-4111-8111-000000000003",
+        "name": "Eastern Bank (EBL)",
+        "institutionType": "commercial_bank",
+        "website": "https://www.ebl.com.bd/",
+        "description": "Private commercial bank. SME range covers Utkorsho, Startup, Mukti, Uddipon, Fleet Financing, Krishi, Asha, Cash Credit, Business Solution and E-Loan / E-Cash.",
+        "contactPhone": null,
+        "isActive": true
+    },
+    {
+        "id": "11111111-1111-4111-8111-000000000004",
+        "name": "Dutch-Bangla Bank (DBBL)",
+        "institutionType": "commercial_bank",
+        "website": "https://www.dutchbanglabank.com/sme-banking.html",
+        "description": "Private commercial bank. Cash credit and term loans at 7.00%–7.50% with no processing fee, plus Janala, festival, women's and SMEDP-2 products.",
+        "contactPhone": null,
+        "isActive": true
+    },
+    {
+        "id": "11111111-1111-4111-8111-000000000005",
+        "name": "Jamuna Bank",
+        "institutionType": "commercial_bank",
+        "website": "https://jamunabankbd.com/",
+        "description": "Private commercial bank. Trade finance, working-capital, startup and CMSME prefinance products.",
+        "contactPhone": null,
+        "isActive": true
+    },
+    {
+        "id": "11111111-1111-4111-8111-000000000006",
+        "name": "Dhaka Bank",
+        "institutionType": "commercial_bank",
+        "website": "https://www.dhakabank.com.bd/",
+        "description": "Private commercial bank. CMSME general term loan and a 5.00% flat women-entrepreneur loan under the Bangladesh Bank refinance scheme.",
+        "contactPhone": null,
+        "isActive": true
+    },
+    {
+        "id": "11111111-1111-4111-8111-000000000007",
+        "name": "Prime Bank",
+        "institutionType": "commercial_bank",
+        "website": "https://www.primebank.com.bd/",
+        "description": "Private commercial bank. Startup, Chalti, Sheba / supplier / work-order, Anchol refinance and Neera women's products.",
+        "contactPhone": null,
+        "isActive": true
+    },
+    {
+        "id": "11111111-1111-4111-8111-000000000008",
+        "name": "The City Bank",
+        "institutionType": "commercial_bank",
+        "website": "https://www.citybankplc.com/",
+        "description": "Private commercial bank. Startup refinance, City Alo women-entrepreneur lending and secured/unsecured small business and distributor finance.",
+        "contactPhone": null,
+        "isActive": true
+    }
+]
