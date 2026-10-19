@@ -50,22 +50,22 @@ class FinanceScreen extends ConsumerWidget {
               onRefresh: () => ref.read(financeControllerProvider).refreshAll(),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 36),
                 children: <Widget>[
                   // Order tells the story: what you earned, how you score,
                   // what that unlocks, and then the AI layer on top.
                   const BusinessOverviewCard(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   const _RecentPaymentsCard(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   const CreditScoreCard(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   const PlanListCard(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   _SmsSyncStatusCard(sync: sync),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   const _AiAdviceCard(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   Text(
                     'GreenBiz is a record-keeping copilot. It is not a lender, '
                     'and nothing here is an offer of credit.',
@@ -133,84 +133,145 @@ class _RecentPaymentsCard extends ConsumerWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              for (final Transaction transaction in rows)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: <Widget>[
-                      Icon(
-                        transaction.isInflow
-                            ? Icons.south_west_rounded
-                            : Icons.north_east_rounded,
-                        size: 16,
-                        color: transaction.isInflow
-                            ? GreenBizTheme.inflow
-                            : GreenBizTheme.outflow,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              transaction.counterpartyLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              DateFormat('d MMM, h:mm a')
-                                  .format(transaction.occurredAt.toLocal()),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (transaction.isFromSms)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 8),
-                          child: StatusChip(
-                            label: 'SMS',
-                            color: GreenBizTheme.seed,
-                            dense: true,
-                          ),
-                        ),
-                      if (!transaction.isBusiness)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 8),
-                          child: StatusChip(
-                            label: 'Personal',
-                            color: GreenBizTheme.scoreMedium,
-                            dense: true,
-                          ),
-                        ),
-                      Text(
-                        transaction.signedAmountLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: transaction.isInflow
-                              ? GreenBizTheme.inflow
-                              : GreenBizTheme.outflow,
-                        ),
-                      ),
-                    ],
+              for (int index = 0; index < rows.length; index++) ...<Widget>[
+                if (index > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.4,
+                    ),
                   ),
+                _PaymentRow(transaction: rows[index]),
+              ],
+              const SizedBox(height: 2),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(AppRoutes.transactions),
+                  icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                  label: const Text('See all payments'),
                 ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed(AppRoutes.transactions),
-                icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                label: const Text('See all payments'),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// One compact payment line: what happened, when, and how much.
+class _PaymentRow extends StatelessWidget {
+  const _PaymentRow({required this.transaction});
+
+  final Transaction transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color accent = transaction.isInflow
+        ? GreenBizTheme.inflow
+        : GreenBizTheme.outflow;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => Navigator.of(context).pushNamed(AppRoutes.transactions),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+        child: Row(
+          children: <Widget>[
+            Container(
+              height: 32,
+              width: 32,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                transaction.isInflow
+                    ? Icons.south_west_rounded
+                    : Icons.north_east_rounded,
+                size: 16,
+                color: accent,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    transaction.counterpartyLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    DateFormat('d MMM, h:mm a')
+                        .format(transaction.occurredAt.toLocal()),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
+                  ),
+                  if (transaction.discountMinor > 0)
+                    Text(
+                      'Sale ${formatMinor(transaction.saleTotalMinor, currency: transaction.currency)}'
+                      ' · ${formatMinor(transaction.discountMinor, currency: transaction.currency)} off',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: GreenBizTheme.scoreMedium,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Text(
+                  transaction.signedAmountLabel,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: accent,
+                  ),
+                ),
+                if (transaction.isFromSms ||
+                    !transaction.isBusiness) ...<Widget>[
+                  const SizedBox(height: 3),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 3,
+                    alignment: WrapAlignment.end,
+                    children: <Widget>[
+                      if (transaction.isFromSms)
+                        const StatusChip(
+                          label: 'SMS',
+                          color: GreenBizTheme.seed,
+                          dense: true,
+                        ),
+                      if (!transaction.isBusiness)
+                        const StatusChip(
+                          label: 'Personal',
+                          color: GreenBizTheme.scoreMedium,
+                          dense: true,
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -238,15 +299,16 @@ class _SmsSyncStatusCard extends ConsumerWidget {
         icon: const Icon(Icons.sync_rounded, size: 18),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (sync.needsPermission) ...<Widget>[
-            Text(
-              'Automatic records are off. Grant the message permission in the '
-              'Profile tab to import payment confirmations.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            const NoticeBox(
+              icon: Icons.sms_failed_outlined,
+              color: GreenBizTheme.scoreMedium,
+              title: 'Automatic records are off',
+              message:
+                  'Grant the message permission in the Profile tab to import '
+                  'payment confirmations.',
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -257,27 +319,18 @@ class _SmsSyncStatusCard extends ConsumerWidget {
               label: const Text('Grant permission'),
             ),
           ] else ...<Widget>[
-            if (summary != null) ...<Widget>[
-              Text(summary.headline, style: theme.textTheme.bodyMedium),
-              const SizedBox(height: 4),
-              Text(
-                summary.detail,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                summary.parserBreakdown,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ] else
+            if (summary != null)
+              NoticeBox(
+                icon: Icons.check_circle_outline_rounded,
+                color: GreenBizTheme.inflow,
+                title: summary.headline,
+                message: '${summary.detail}\n${summary.parserBreakdown}',
+              )
+            else
               Text(
                 'Ready to sync. We read payment confirmations from bKash, Nagad, '
                 'and Rocket so you don\'t have to enter them manually.',
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -347,41 +400,23 @@ class _AiAdviceCard extends ConsumerWidget {
             onRetry: () => ref.invalidate(aiAvailabilityProvider),
             builder: (bool isAvailable) {
               if (!isAvailable) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.6,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Icon(
-                        Icons.smart_toy_outlined,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'AI advice is not configured on the server yet. Add '
-                          'GEMINI_API_KEY as a Worker secret to enable it.',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ),
-                    ],
-                  ),
+                return const NoticeBox(
+                  icon: Icons.smart_toy_outlined,
+                  title: 'AI advice is not configured yet',
+                  message:
+                      'Add GEMINI_API_KEY as a Worker secret to turn this on.',
                 );
               }
 
-              return FilledButton.icon(
-                onPressed: shop == null
-                    ? null
-                    : () => AiAdviceSheet.show(context, shopId: shop.id),
-                icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                label: const Text('Ask AI for advice'),
+              return SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: shop == null
+                      ? null
+                      : () => AiAdviceSheet.show(context, shopId: shop.id),
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: const Text('Ask AI for advice'),
+                ),
               );
             },
           ),

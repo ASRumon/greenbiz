@@ -58,7 +58,7 @@ class GreenBizTheme {
         elevation: 0,
         color: scheme.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.5)),
         ),
         margin: EdgeInsets.zero,

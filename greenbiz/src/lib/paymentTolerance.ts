@@ -41,3 +41,58 @@ export function isWithinPaymentTolerance(
 	if (!Number.isFinite(receivedMinor) || receivedMinor <= 0) return false;
 	return Math.abs(receivedMinor - expectedMinor) <= paymentToleranceMinor(expectedMinor);
 }
+
+/**
+ * What to do with a sale when a mobile-money message backs it.
+ *
+ * - `merge`: the message is the whole payment (exact, or inside the cash-out
+ *   band, where the customer added or the shop absorbed the charge).
+ * - `split`: the message covers part of the bill and the customer handed over
+ *   the rest in cash. The caller books a second cash row.
+ * - `separate`: the message is too far from the bill to belong to it; the sale
+ *   is recorded as its own row and the message stays untouched.
+ * - `invalid`: the client sent a cash balance that does not add up. Rejecting
+ *   is safer than guessing and writing a wrong ledger.
+ */
+export type SalePaymentResolution =
+	| { mode: "merge" }
+	| { mode: "split"; cashMinor: number }
+	| { mode: "separate" }
+	| { mode: "invalid"; message: string };
+
+export function resolveSalePayment(input: {
+	receivedMinor: number;
+	totalMinor: number;
+	/** Cash the customer also handed over, when the client says it did. */
+	cashMinor?: number;
+}): SalePaymentResolution {
+	const { receivedMinor, totalMinor } = input;
+	const cashMinor = input.cashMinor ?? 0;
+
+	if (!Number.isFinite(receivedMinor) || receivedMinor <= 0) {
+		return { mode: "separate" };
+	}
+	if (!Number.isFinite(totalMinor) || totalMinor <= 0) {
+		return { mode: "invalid", message: "The sale total must be greater than zero" };
+	}
+
+	if (cashMinor > 0) {
+		if (receivedMinor >= totalMinor) {
+			return {
+				mode: "invalid",
+				message: "The payment message already covers the receipt",
+			};
+		}
+		const balanceMinor = totalMinor - receivedMinor;
+		if (cashMinor !== balanceMinor) {
+			return {
+				mode: "invalid",
+				message: `The cash balance must be exactly ${balanceMinor} minor units`,
+			};
+		}
+		return { mode: "split", cashMinor };
+	}
+
+	if (isWithinPaymentTolerance(receivedMinor, totalMinor)) return { mode: "merge" };
+	return { mode: "separate" };
+}

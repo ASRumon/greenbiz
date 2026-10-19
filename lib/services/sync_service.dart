@@ -268,6 +268,8 @@ class SyncService {
           liveSms: payload['liveSms'] is Map
               ? Map<String, dynamic>.from(payload['liveSms'] as Map)
               : null,
+          payableMinor: (payload['payableMinor'] as num?)?.toInt(),
+          cashMinor: (payload['cashMinor'] as num?)?.toInt() ?? 0,
         );
 
         if (receipt.smsId != null && receipt.transactionId != op.entityId) {
@@ -279,6 +281,12 @@ class SyncService {
             paymentMethod: receipt.paymentMethod,
             reference: receipt.reference,
           );
+          // A split payment also produced a cash row on the server. Cache it
+          // now so the Payments list shows the full picture immediately.
+          final Transaction? cashRow = receipt.cashTransaction;
+          if (cashRow != null) {
+            await _local.upsertRemoteTransactions(<Transaction>[cashRow]);
+          }
         } else {
           await _local.setTransactionSyncState(op.entityId, 0);
           await _local.updateTransactionPayment(

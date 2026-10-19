@@ -111,4 +111,67 @@ void main() {
     expect(find.text('Open full report'), findsOneWidget);
     expect(find.textContaining('Previous period:'), findsOneWidget);
   });
+
+  testWidgets('the overview fits a narrow phone without overflow', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final FinancePeriod period = FinancePeriod.monthOf(DateTime(2026, 10));
+    final FinanceSummary summary = FinanceSummary.build(
+      period: period,
+      rows: <Transaction>[
+        _tx(
+          id: '1',
+          direction: 'in',
+          amountMinor: 14850000,
+          occurredAt: DateTime(2026, 10, 1, 10),
+          method: 'bkash',
+          counterparty: 'Ayesha Traders and General Store',
+        ),
+        _tx(
+          id: '2',
+          direction: 'out',
+          amountMinor: 98765432,
+          occurredAt: DateTime(2026, 10, 2, 11),
+          method: 'cash',
+          counterparty: 'Supplier',
+        ),
+      ],
+      previousRows: <Transaction>[
+        _tx(
+          id: 'p1',
+          direction: 'in',
+          amountMinor: 10000000,
+          occurredAt: DateTime(2026, 9, 12),
+          method: 'bkash',
+          counterparty: 'Ayesha',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          financePeriodProvider.overrideWith(
+            () => _FixedPeriodController(period),
+          ),
+          financeInsightsProvider(period).overrideWith((Ref ref) => summary),
+        ],
+        child: MaterialApp(
+          theme: GreenBizTheme.light(),
+          home: const Scaffold(
+            body: SingleChildScrollView(child: BusinessOverviewCard()),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // A RenderFlex overflow surfaces here as a thrown FlutterError.
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -77,18 +77,18 @@ class _CreditScoreCardState extends ConsumerState<CreditScoreCard> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   SizedBox(
-                    height: 92,
-                    width: 92,
+                    height: 104,
+                    width: 104,
                     child: Stack(
                       alignment: Alignment.center,
                       children: <Widget>[
                         SizedBox(
-                          height: 92,
-                          width: 92,
+                          height: 104,
+                          width: 104,
                           child: CircularProgressIndicator(
                             value: data.score / 100,
-                            strokeWidth: 8,
-                            backgroundColor: bandColor.withValues(alpha: 0.15),
+                            strokeWidth: 9,
+                            backgroundColor: bandColor.withValues(alpha: 0.13),
                             valueColor: AlwaysStoppedAnimation<Color>(
                               bandColor,
                             ),
@@ -101,8 +101,9 @@ class _CreditScoreCardState extends ConsumerState<CreditScoreCard> {
                             Text(
                               '${data.score}',
                               style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                                 color: bandColor,
+                                letterSpacing: -1,
                               ),
                             ),
                             Text(
@@ -221,7 +222,7 @@ class _FactorBar extends StatelessWidget {
     final Color color = GreenBizTheme.forScore(factor.score);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -230,18 +231,24 @@ class _FactorBar extends StatelessWidget {
               Expanded(
                 child: Text(
                   factor.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '${factor.score}/100',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: color,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 '${(factor.weight * 100).toStringAsFixed(0)}% weight',
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -251,13 +258,13 @@ class _FactorBar extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 6),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: factor.score / 100,
-              minHeight: 7,
-              backgroundColor: color.withValues(alpha: 0.14),
+              minHeight: 6,
+              backgroundColor: color.withValues(alpha: 0.12),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),

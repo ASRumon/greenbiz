@@ -66,32 +66,44 @@ class PlanMatch {
   bool get isInterestOnly =>
       facility == 'revolving' || facility == 'interest_only';
 
-  factory PlanMatch.fromJson(Map<String, dynamic> json) => PlanMatch(
-    plan: Plan.fromJson(
-      json['plan'] is Map
-          ? Map<String, dynamic>.from(json['plan'] as Map)
-          : json,
-    ),
-    fitScore: asDouble(json['fitScore']),
-    priority: MatchPriority.parse(asString(json['priority'])),
-    reasons: _asStrings(json['reasons']),
-    emiMinor: json['emiMinor'] == null ? null : asInt(json['emiMinor']),
-    suggestedAmountMinor: json['suggestedAmountMinor'] == null
-        ? null
-        : asInt(json['suggestedAmountMinor']),
-    affordabilityRatio: json['affordabilityRatio'] == null
-        ? null
-        : asDouble(json['affordabilityRatio']),
-    interestRatePct: json['interestRatePct'] == null
-        ? null
-        : asDouble(json['interestRatePct']),
-    tenorMonths: json['tenorMonths'] == null
-        ? null
-        : asInt(json['tenorMonths']),
-    facility: asString(json['facility']) ?? 'term',
-    requirements: _asStrings(json['requirements']),
-    warnings: _asStrings(json['warnings']),
-  );
+  /// The matcher returns `institutionName` and `institutionType` as siblings of
+  /// `plan`, not inside it. Fold them into the plan map so every caller can
+  /// name the bank from `plan.institutionName` (before this, matched tiles
+  /// rendered "Unknown provider" for every lender).
+  factory PlanMatch.fromJson(Map<String, dynamic> json) {
+    final Map<String, dynamic> planJson = json['plan'] is Map
+        ? Map<String, dynamic>.from(json['plan'] as Map)
+        : Map<String, dynamic>.from(json);
+
+    return PlanMatch(
+      plan: Plan.fromJson(<String, dynamic>{
+        ...planJson,
+        'institutionName':
+            planJson['institutionName'] ?? json['institutionName'],
+        'institutionType':
+            planJson['institutionType'] ?? json['institutionType'],
+      }),
+      fitScore: asDouble(json['fitScore']),
+      priority: MatchPriority.parse(asString(json['priority'])),
+      reasons: _asStrings(json['reasons']),
+      emiMinor: json['emiMinor'] == null ? null : asInt(json['emiMinor']),
+      suggestedAmountMinor: json['suggestedAmountMinor'] == null
+          ? null
+          : asInt(json['suggestedAmountMinor']),
+      affordabilityRatio: json['affordabilityRatio'] == null
+          ? null
+          : asDouble(json['affordabilityRatio']),
+      interestRatePct: json['interestRatePct'] == null
+          ? null
+          : asDouble(json['interestRatePct']),
+      tenorMonths: json['tenorMonths'] == null
+          ? null
+          : asInt(json['tenorMonths']),
+      facility: asString(json['facility']) ?? 'term',
+      requirements: _asStrings(json['requirements']),
+      warnings: _asStrings(json['warnings']),
+    );
+  }
 }
 
 /// The server's "how much can I borrow?" estimate.

@@ -322,6 +322,207 @@ void main() {
     });
   });
 
+  group('amount-based sales', () {
+    test('both prompts make the AI responsible for amounts', () {
+      final String intents = buildIntentPrompt('30 taka onion');
+      expect(intents, contains('Never put a money amount in "quantity"'));
+      expect(intents, contains('70 taka onion and a calculator'));
+      expect(intents, contains('Pass 2 computes the weight'));
+
+      final String matching = buildMatchPrompt(
+        transcript: '30 taka onion',
+        intents: const <SaleIntent>[
+          SaleIntent(query: 'onion', amountMinor: 3000),
+        ],
+        candidates: <String, List<Product>>{
+          'onion': <Product>[_product('p-onion', 'Onion')],
+        },
+      );
+      expect(matching, contains('"amountMinor":3000'));
+      expect(matching, contains('compute the FINAL quantity yourself'));
+      expect(matching, contains('whole-number'));
+    });
+
+    test('a pass-1 amount is money, never a quantity', () {
+      final List<SaleIntent> intents = parseSaleIntents(
+        '{"items":[{"query":"onion","quantity":null,"amount":30}]}',
+      );
+
+      expect(intents.single.quantity, isNull);
+      expect(intents.single.amountMinor, 3000);
+      expect(intents.single.isAmountBased, isTrue);
+    });
+
+    test('merges two lines for the same product and sums their money', () {
+      final List<SaleIntent> intents = mergeDuplicateIntents(<SaleIntent>[
+        const SaleIntent(query: 'onion', amountMinor: 3000),
+        const SaleIntent(query: 'Onion', amountMinor: 2000),
+      ]);
+
+      expect(intents.length, 1);
+      expect(intents.single.amountMinor, 5000);
+    });
+
+    test('uses the AI quantity for amount-based lines', () async {
+      var calls = 0;
+      final Dio dio = Dio();
+      dio.httpClientAdapter = _FakeAdapter((RequestOptions options) {
+        calls++;
+        final String sent = jsonEncode(options.data);
+        final bool isMatchPass = sent.contains('Requested items');
+
+        final Map<String, dynamic> payload = isMatchPass
+            ? <String, dynamic>{
+                'items': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'query': 'onion',
+                    'productId': 'p-onion',
+                    // The AI did the arithmetic: ৳30 ÷ ৳60 per kg.
+                    'quantity': 0.5,
+                    'confidence': 0.9,
+                  },
+                  <String, dynamic>{
+                    'query': 'milk',
+                    'productId': 'p-milk',
+                    // ৳20 ÷ ৳50 per litre.
+                    'quantity': 0.4,
+                    'confidence': 0.9,
+                  },
+                ],
+                'unmatched': <String>[],
+              }
+            : <String, dynamic>{
+                'items': <Map<String, dynamic>>[
+                  <String, dynamic>{'query': 'onion', 'amount': 30},
+                  <String, dynamic>{'query': 'milk', 'amount': 20},
+                ],
+              };
+
+        return <String, dynamic>{
+          'candidates': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'content': <String, dynamic>{
+                'parts': <Map<String, dynamic>>[
+                  <String, dynamic>{'text': jsonEncode(payload)},
+                ],
+              },
+              'finishReason': 'STOP',
+            },
+          ],
+        };
+      });
+
+      final SaleAiService service = SaleAiService(dio: dio);
+      final SaleAiResult result = await service.interpret(
+        transcript: '30 taka onion 20 taka milk',
+        products: <Product>[
+          _product('p-onion', 'Onion', priceMinor: 6000, stock: 10),
+          _product(
+            'p-milk',
+            'Milk',
+            priceMinor: 5000,
+            stock: 10,
+            unit: 'litre',
+          ),
+        ],
+        settings: const AiSettings(apiKey: 'test-key'),
+      );
+
+      expect(calls, 2);
+
+      final SaleLine onion = result.lines.firstWhere(
+        (SaleLine line) => line.product.id == 'p-onion',
+      );
+      expect(onion.quantity, 0.5);
+      expect(onion.lineTotalMinor, 3000);
+
+      final SaleLine milk = result.lines.firstWhere(
+        (SaleLine line) => line.product.id == 'p-milk',
+      );
+      expect(milk.quantity, 0.4);
+      expect(milk.lineTotalMinor, 2000);
+    });
+
+    test('uses the AI whole-piece quantity for a calculator', () async {
+      var calls = 0;
+      final Dio dio = Dio();
+      dio.httpClientAdapter = _FakeAdapter((RequestOptions options) {
+        calls++;
+        final String sent = jsonEncode(options.data);
+        final bool isMatchPass = sent.contains('Requested items');
+
+        final Map<String, dynamic> payload = isMatchPass
+            ? <String, dynamic>{
+                'items': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'query': 'onion',
+                    'productId': 'p-onion',
+                    'quantity': 70 / 60,
+                    'confidence': 0.9,
+                  },
+                  <String, dynamic>{
+                    'query': 'calculator',
+                    'productId': 'p-calc',
+                    'quantity': 1,
+                    'confidence': 0.9,
+                  },
+                ],
+                'unmatched': <String>[],
+              }
+            : <String, dynamic>{
+                // The prompt requires the calculator to have no amount.
+                'items': <Map<String, dynamic>>[
+                  <String, dynamic>{'query': 'onion', 'amount': 70},
+                  <String, dynamic>{'query': 'calculator'},
+                ],
+              };
+
+        return <String, dynamic>{
+          'candidates': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'content': <String, dynamic>{
+                'parts': <Map<String, dynamic>>[
+                  <String, dynamic>{'text': jsonEncode(payload)},
+                ],
+              },
+              'finishReason': 'STOP',
+            },
+          ],
+        };
+      });
+
+      final SaleAiService service = SaleAiService(dio: dio);
+      final SaleAiResult result = await service.interpret(
+        transcript: '70 taka onion and calculator',
+        products: <Product>[
+          _product('p-onion', 'Onion', priceMinor: 6000, stock: 10),
+          _product(
+            'p-calc',
+            'Calculator',
+            priceMinor: 80000,
+            stock: 5,
+            unit: 'piece',
+          ),
+        ],
+        settings: const AiSettings(apiKey: 'test-key'),
+      );
+
+      expect(calls, 2);
+
+      final SaleLine onion = result.lines.firstWhere(
+        (SaleLine line) => line.product.id == 'p-onion',
+      );
+      expect(onion.quantity, closeTo(70 / 60, 1e-9));
+      expect(onion.lineTotalMinor, 7000);
+
+      final SaleLine calculator = result.lines.firstWhere(
+        (SaleLine line) => line.product.id == 'p-calc',
+      );
+      expect(calculator.quantity, 1);
+      expect(calculator.lineTotalMinor, 80000);
+    });
+  });
+
   group('sale money', () {
     test('rounds once, at the line level', () {
       // 19.99 * 2.5 = 49.975 -> 49.98 (4998 minor units).
@@ -330,13 +531,14 @@ void main() {
         quantity: 2.5,
       );
       expect(line.lineTotalMinor, 4998);
-      expect(line.quantityLabel, '2.50');
+      expect(line.quantityLabel, '2.5');
     });
 
     test('formats whole quantities without a decimal point', () {
       expect(formatQuantity(3), '3');
-      expect(formatQuantity(2.5), '2.50');
+      expect(formatQuantity(2.5), '2.5');
       expect(formatQuantity(0.25), '0.25');
+      expect(formatQuantity(0.333333), '0.333');
     });
   });
 
@@ -363,7 +565,7 @@ void main() {
       expect(receipt.totalMinor, 4998);
       expect(receipt.score, 61);
       expect(receipt.items.single.productName, 'Rice');
-      expect(receipt.items.single.quantityLabel, '2.50');
+      expect(receipt.items.single.quantityLabel, '2.5');
     });
   });
 }

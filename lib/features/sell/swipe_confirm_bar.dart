@@ -6,6 +6,10 @@ import '../../core/theme.dart';
 ///
 /// Swipe right for cash, swipe left to choose a mobile-money payment. The drag
 /// snaps back after the action fires, so the bar is reusable if the sale fails.
+///
+/// When a payment message is already attached, the labels name the real method
+/// ("Confirm bKash") and the cash side can be disabled, so the owner never has
+/// to choose a payment type the app already knows.
 class SwipeConfirmBar extends StatefulWidget {
   const SwipeConfirmBar({
     super.key,
@@ -13,12 +17,24 @@ class SwipeConfirmBar extends StatefulWidget {
     required this.busy,
     required this.onCash,
     required this.onDigital,
+    this.cashEnabled = true,
+    this.digitalEnabled = true,
+    this.cashLabel = 'Cash',
+    this.digitalLabel = 'Mobile money',
+    this.hint,
   });
 
   final bool enabled;
   final bool busy;
   final VoidCallback onCash;
   final VoidCallback onDigital;
+  final bool cashEnabled;
+  final bool digitalEnabled;
+  final String cashLabel;
+  final String digitalLabel;
+
+  /// Sentence under the bar. Defaults to the two-sided instruction.
+  final String? hint;
 
   @override
   State<SwipeConfirmBar> createState() => _SwipeConfirmBarState();
@@ -36,9 +52,9 @@ class _SwipeConfirmBarState extends State<SwipeConfirmBar> {
     final double drag = _drag;
     setState(() => _drag = 0);
 
-    if (drag >= _threshold) {
+    if (drag >= _threshold && widget.cashEnabled) {
       widget.onCash();
-    } else if (drag <= -_threshold) {
+    } else if (drag <= -_threshold && widget.digitalEnabled) {
       widget.onDigital();
     }
   }
@@ -48,7 +64,7 @@ class _SwipeConfirmBarState extends State<SwipeConfirmBar> {
     final ThemeData theme = Theme.of(context);
 
     return Semantics(
-      label: 'Swipe right for cash, swipe left for mobile money',
+      label: widget.hint ?? 'Swipe right for cash, swipe left for mobile money',
       button: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -58,8 +74,8 @@ class _SwipeConfirmBarState extends State<SwipeConfirmBar> {
             onHorizontalDragUpdate: _canDrag
                 ? (DragUpdateDetails details) => setState(
                     () => _drag = (_drag + details.delta.dx).clamp(
-                      -_maxDrag,
-                      _maxDrag,
+                      widget.digitalEnabled ? -_maxDrag : 0,
+                      widget.cashEnabled ? _maxDrag : 0,
                     ),
                   )
                 : null,
@@ -89,32 +105,59 @@ class _SwipeConfirmBarState extends State<SwipeConfirmBar> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: <Widget>[
-                        Icon(
-                          Icons.payments_outlined,
-                          size: 18,
-                          color: GreenBizTheme.inflow,
+                        Expanded(
+                          child: widget.cashEnabled
+                              ? Row(
+                                  children: <Widget>[
+                                    Icon(
+                                      Icons.payments_outlined,
+                                      size: 18,
+                                      color: GreenBizTheme.inflow,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        widget.cashLabel,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: GreenBizTheme.inflow,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Cash',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: GreenBizTheme.inflow,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          'Mobile money',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.phone_android_rounded,
-                          size: 18,
-                          color: theme.colorScheme.primary,
+                        Expanded(
+                          child: widget.digitalEnabled
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: <Widget>[
+                                    Flexible(
+                                      child: Text(
+                                        widget.digitalLabel,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.end,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      Icons.phone_android_rounded,
+                                      size: 18,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
                         ),
                       ],
                     ),
@@ -146,7 +189,11 @@ class _SwipeConfirmBarState extends State<SwipeConfirmBar> {
                               ),
                             )
                           : Icon(
-                              _drag < 0
+                              !widget.cashEnabled
+                                  ? Icons.chevron_left_rounded
+                                  : !widget.digitalEnabled
+                                  ? Icons.chevron_right_rounded
+                                  : _drag < 0
                                   ? Icons.chevron_left_rounded
                                   : Icons.chevron_right_rounded,
                               color: theme.colorScheme.primary,
@@ -161,7 +208,8 @@ class _SwipeConfirmBarState extends State<SwipeConfirmBar> {
           Text(
             widget.busy
                 ? 'Recording sale…'
-                : 'Swipe right for cash · swipe left for mobile money',
+                : widget.hint ??
+                      'Swipe right for cash · swipe left for mobile money',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,

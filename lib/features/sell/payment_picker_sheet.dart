@@ -12,11 +12,19 @@ import '../profile/profile_controller.dart';
 
 /// How the customer paid, plus the mobile-money reference when one was matched.
 class PaymentChoice {
-  const PaymentChoice({required this.method, this.reference, this.smsId});
+  const PaymentChoice({
+    required this.method,
+    this.reference,
+    this.smsId,
+    this.amountMinor,
+  });
 
   /// cash | bkash | nagad | rocket | upay | upi | other
   final String method;
   final String? reference;
+
+  /// What the message says arrived. Null when the owner only picked a method.
+  final int? amountMinor;
 
   /// Server-side SMS id when a confirmation message was picked. Linking it
   /// makes the server merge the sale into that existing payment row instead of
@@ -345,6 +353,7 @@ class _PaymentPickerSheetState extends ConsumerState<PaymentPickerSheet> {
                             method: paymentMethodFor(transaction),
                             reference: transaction.reference,
                             smsId: transaction.smsId,
+                            amountMinor: transaction.amountMinor,
                           ),
                         ),
                       ),
@@ -709,6 +718,7 @@ class _PickMessageStepState extends ConsumerState<_PickMessageStep> {
                             method: paymentMethodFor(transaction),
                             reference: transaction.reference,
                             smsId: transaction.smsId,
+                            amountMinor: transaction.amountMinor,
                           ),
                         ),
                       ),

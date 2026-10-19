@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../core/api_client.dart';
 import '../core/ids.dart';
 import '../core/local_db.dart';
+import '../core/money.dart';
 import '../models/credit_profile.dart';
 import '../models/live_sms_payment.dart';
 import '../models/plan.dart';
@@ -479,15 +480,25 @@ class OfflineSaleService {
     String? paymentReference,
     String? smsId,
     LiveSmsPayment? liveSms,
+    int? payableMinor,
+    int cashMinor = 0,
   }) async {
     final DateTime now = DateTime.now();
     final String transactionId = id ?? newUuid();
     final String currency = await _local.defaultCurrency(shopId);
 
-    final int totalMinor = lines.fold<int>(
+    final int subtotalMinor = lines.fold<int>(
       0,
       (int sum, SaleLine line) => sum + line.lineTotalMinor,
     );
+
+    // The shopkeeper may round the bill down ("৳257, give me ৳250"). The
+    // transaction records what was collected; the difference is the discount.
+    final int totalMinor = (payableMinor ?? subtotalMinor).clamp(
+      0,
+      subtotalMinor,
+    );
+    final int discountMinor = subtotalMinor - totalMinor;
 
     final String summary = lines
         .map(
@@ -501,6 +512,11 @@ class OfflineSaleService {
         ? 'Walk-in customer'
         : counterparty!.trim();
 
+    final String note =
+        'Sale: $summary'
+        '${discountMinor > 0 ? ' · ${formatMinor(discountMinor)} discount' : ''}'
+        '${cashMinor > 0 ? ' · ${formatMinor(cashMinor)} cash balance' : ''}';
+
     final Transaction transaction = Transaction(
       id: transactionId,
       shopId: shopId,
@@ -510,12 +526,12 @@ class OfflineSaleService {
       counterparty: customer,
       reference: paymentReference,
       occurredAt: occurredAt ?? now,
-      note: 'Sale: $summary'.length > 240
-          ? 'Sale: $summary'.substring(0, 240)
-          : 'Sale: $summary',
+      note: note.length > 240 ? note.substring(0, 240) : note,
       createdAt: now,
       isBusiness: true,
       paymentMethod: paymentMethod,
+      subtotalMinor: subtotalMinor,
+      discountMinor: discountMinor,
       syncState: 1,
     );
 
@@ -543,6 +559,8 @@ class OfflineSaleService {
         'reference': ?paymentReference,
         'smsId': ?smsId,
         'liveSms': ?liveSms?.toJson(),
+        if (payableMinor != null) 'payableMinor': totalMinor,
+        if (cashMinor > 0) 'cashMinor': cashMinor,
       },
     );
     _sync.kick();
@@ -550,10 +568,13 @@ class OfflineSaleService {
     return SaleReceipt(
       transactionId: transactionId,
       totalMinor: totalMinor,
+      subtotalMinor: subtotalMinor,
+      discountMinor: discountMinor,
       currency: currency,
       paymentMethod: paymentMethod,
       reference: paymentReference,
       smsId: smsId,
+      cashMinor: cashMinor,
       items: <SaleReceiptItem>[
         for (final SaleLine line in lines)
           SaleReceiptItem(

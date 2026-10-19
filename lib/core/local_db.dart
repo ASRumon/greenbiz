@@ -66,7 +66,7 @@ class LocalDatabase {
 
     final Database db = await openDatabase(
       databasePath,
-      version: 3,
+      version: 5,
       onCreate: (Database db, int version) async {
         await db.execute('''
           CREATE TABLE user_cache (
@@ -116,6 +116,8 @@ class LocalDatabase {
             note TEXT,
             is_business INTEGER NOT NULL DEFAULT 1,
             payment_method TEXT,
+            subtotal_minor INTEGER NOT NULL DEFAULT 0,
+            discount_minor INTEGER NOT NULL DEFAULT 0,
             sms_sender TEXT,
             sms_body TEXT,
             created_at INTEGER,
@@ -163,6 +165,18 @@ class LocalDatabase {
           );
           await db.execute(
             'ALTER TABLE transaction_cache ADD COLUMN sms_body TEXT',
+          );
+        }
+        if (oldVersion < 4) {
+          await db.execute(
+            'ALTER TABLE transaction_cache ADD COLUMN discount_minor '
+            'INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+        if (oldVersion < 5) {
+          await db.execute(
+            'ALTER TABLE transaction_cache ADD COLUMN subtotal_minor '
+            'INTEGER NOT NULL DEFAULT 0',
           );
         }
       },
@@ -699,6 +713,8 @@ class LocalDatabase {
     'note': transaction.note,
     'is_business': transaction.isBusiness ? 1 : 0,
     'payment_method': transaction.paymentMethod,
+    'subtotal_minor': transaction.subtotalMinor,
+    'discount_minor': transaction.discountMinor,
     'sms_sender': transaction.smsSender,
     'sms_body': transaction.smsBody,
     'created_at': transaction.createdAt?.millisecondsSinceEpoch,
@@ -720,6 +736,8 @@ class LocalDatabase {
     createdAt: _date(row['created_at']),
     isBusiness: ((row['is_business'] as int?) ?? 1) != 0,
     paymentMethod: row['payment_method'] as String?,
+    subtotalMinor: ((row['subtotal_minor'] as num?) ?? 0).toInt(),
+    discountMinor: ((row['discount_minor'] as num?) ?? 0).toInt(),
     smsSender: row['sms_sender'] as String?,
     smsBody: row['sms_body'] as String?,
     syncState: (row['sync_state'] as int?) ?? 0,

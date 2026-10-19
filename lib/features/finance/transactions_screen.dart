@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/money.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../models/transaction.dart';
@@ -142,6 +143,38 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 label: 'Payment method',
                 value: transaction.paymentMethodLabel,
               ),
+              if (transaction.hasSaleBreakdown) ...<Widget>[
+                DetailRow(
+                  label: 'Bill',
+                  value: formatMinor(
+                    transaction.subtotalMinor,
+                    currency: transaction.currency,
+                  ),
+                ),
+                if (transaction.discountMinor > 0)
+                  DetailRow(
+                    label: 'Discount given',
+                    value: formatMinor(
+                      transaction.discountMinor,
+                      currency: transaction.currency,
+                    ),
+                  ),
+                DetailRow(
+                  label: 'Sale total',
+                  value: formatMinor(
+                    transaction.saleTotalMinor,
+                    currency: transaction.currency,
+                  ),
+                ),
+                if (transaction.amountDiffersFromSale)
+                  DetailRow(
+                    label: 'Received',
+                    value: formatMinor(
+                      transaction.amountMinor,
+                      currency: transaction.currency,
+                    ),
+                  ),
+              ],
               DetailRow(
                 label: 'Recorded as',
                 value: transaction.isBusiness ? 'Business' : 'Personal',
@@ -488,6 +521,19 @@ class _PaymentTile extends StatelessWidget {
                     ),
                 ],
               ),
+              if (transaction.hasSaleBreakdown &&
+                  (transaction.discountMinor > 0 ||
+                      transaction.amountDiffersFromSale)) ...<Widget>[
+                const SizedBox(height: 4),
+                Text(
+                  transaction.saleBreakdownLabel,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
               const SizedBox(height: 6),
               Wrap(
                 spacing: 6,
@@ -518,6 +564,14 @@ class _PaymentTile extends StatelessWidget {
                       label: transaction.paymentMethodLabel,
                       color: theme.colorScheme.secondary,
                       icon: Icons.account_balance_wallet_outlined,
+                      dense: true,
+                    ),
+                  if (transaction.discountMinor > 0)
+                    StatusChip(
+                      label:
+                          '${formatMinor(transaction.discountMinor, currency: transaction.currency)} discount',
+                      color: GreenBizTheme.scoreMedium,
+                      icon: Icons.local_offer_outlined,
                       dense: true,
                     ),
                 ],

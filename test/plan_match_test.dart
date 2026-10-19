@@ -12,10 +12,12 @@ void main() {
           'institutionId': 'i1',
           'planName': 'Startup Builder',
           'serviceType': 'loan',
-          'institutionName': 'BRAC Bank',
           'interestRateMin': 4.0,
           'durationMonths': 60,
         },
+        // The matcher puts the lender beside the plan, not inside it.
+        'institutionName': 'BRAC Bank',
+        'institutionType': 'commercial_bank',
         'fitScore': 0.91,
         'priority': 'high',
         'emiMinor': 1017254,
@@ -36,9 +38,32 @@ void main() {
       expect(match.affordabilityRatio, 2.0);
       expect(match.isInterestOnly, isFalse);
       expect(match.plan.planName, 'Startup Builder');
+      expect(match.plan.institutionName, 'BRAC Bank');
+      expect(match.plan.institutionType, 'commercial_bank');
       expect(match.reasons, hasLength(1));
       expect(match.requirements, <String>['Valid trade licence']);
     });
+
+    test(
+      'never loses the lender name, which used to render Unknown provider',
+      () {
+        final PlanMatch match = PlanMatch.fromJson(<String, dynamic>{
+          'plan': <String, dynamic>{
+            'id': 'p3',
+            'institutionId': '11111111-1111-4111-8111-000000000004',
+            'planName': 'DBBL Unnoyan (SMEDP-2 Term Loan)',
+            'serviceType': 'loan',
+          },
+          'institutionName': 'Dutch-Bangla Bank (DBBL)',
+          'institutionType': 'commercial_bank',
+          'fitScore': 0.62,
+          'priority': 'medium',
+          'reasons': <String>[],
+        });
+
+        expect(match.plan.institutionName, 'Dutch-Bangla Bank (DBBL)');
+      },
+    );
 
     test('marks a revolving facility as interest-only', () {
       final PlanMatch match = PlanMatch.fromJson(<String, dynamic>{

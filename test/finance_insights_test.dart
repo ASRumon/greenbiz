@@ -11,6 +11,8 @@ Transaction _tx({
   String? method,
   String? counterparty,
   bool isBusiness = true,
+  int subtotalMinor = 0,
+  int discountMinor = 0,
 }) {
   return Transaction(
     id: id,
@@ -22,6 +24,8 @@ Transaction _tx({
     paymentMethod: method,
     counterparty: counterparty,
     isBusiness: isBusiness,
+    subtotalMinor: subtotalMinor,
+    discountMinor: discountMinor,
   );
 }
 
@@ -105,6 +109,8 @@ void main() {
         occurredAt: DateTime(2026, 10, 17, 15),
         method: 'cash',
         counterparty: 'Babul',
+        subtotalMinor: 25700,
+        discountMinor: 700,
       ),
       _tx(
         id: '5',
@@ -173,6 +179,11 @@ void main() {
     test('names the busiest day and averages incoming sales', () {
       expect(summary.busiestBucket?.start, DateTime(2026, 10, 1));
       expect(summary.averageInflowMinor, 58333);
+    });
+
+    test('sums the discounts given, in Taka', () {
+      expect(summary.discountMinor, 700);
+      expect(summary.hasDiscount, isTrue);
     });
 
     test('an empty period still has chart buckets', () {

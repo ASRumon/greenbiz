@@ -63,10 +63,12 @@ class FinanceSummary {
     required this.period,
     required this.inMinor,
     required this.outMinor,
+    required this.discountMinor,
     required this.count,
     required this.inflowCount,
     required this.previousInMinor,
     required this.previousOutMinor,
+    required this.previousDiscountMinor,
     required this.previousCount,
     required this.buckets,
     required this.methods,
@@ -79,10 +81,12 @@ class FinanceSummary {
     period: period,
     inMinor: 0,
     outMinor: 0,
+    discountMinor: 0,
     count: 0,
     inflowCount: 0,
     previousInMinor: 0,
     previousOutMinor: 0,
+    previousDiscountMinor: 0,
     previousCount: 0,
     buckets: _bucketSkeleton(period),
     methods: const <FinanceMethodSummary>[],
@@ -116,6 +120,17 @@ class FinanceSummary {
     final int previousOutMinor = previousBusiness
         .where((Transaction row) => !row.isInflow)
         .fold<int>(0, (int sum, Transaction row) => sum + row.amountMinor);
+
+    // Discounts are stored on the primary row of each sale, so this sums each
+    // discount exactly once even when the sale was split across two payments.
+    final int discountMinor = business.fold<int>(
+      0,
+      (int sum, Transaction row) => sum + row.discountMinor,
+    );
+    final int previousDiscountMinor = previousBusiness.fold<int>(
+      0,
+      (int sum, Transaction row) => sum + row.discountMinor,
+    );
 
     final List<FinanceBucketSummary> buckets = _buildBuckets(period, business);
     final Map<String, ({int inMinor, int outMinor, int count})> methodTotals =
@@ -180,10 +195,12 @@ class FinanceSummary {
       period: period,
       inMinor: inMinor,
       outMinor: outMinor,
+      discountMinor: discountMinor,
       count: business.length,
       inflowCount: business.where((Transaction row) => row.isInflow).length,
       previousInMinor: previousInMinor,
       previousOutMinor: previousOutMinor,
+      previousDiscountMinor: previousDiscountMinor,
       previousCount: previousBusiness.length,
       buckets: buckets,
       methods: methods,
@@ -196,10 +213,15 @@ class FinanceSummary {
   final FinancePeriod period;
   final int inMinor;
   final int outMinor;
+
+  /// Taka knocked off bills (round-offs and discounts) in this period.
+  final int discountMinor;
+
   final int count;
   final int inflowCount;
   final int previousInMinor;
   final int previousOutMinor;
+  final int previousDiscountMinor;
   final int previousCount;
   final List<FinanceBucketSummary> buckets;
   final List<FinanceMethodSummary> methods;
@@ -208,6 +230,8 @@ class FinanceSummary {
   final List<Transaction> transactions;
 
   int get netMinor => inMinor - outMinor;
+
+  bool get hasDiscount => discountMinor > 0;
 
   bool get isEmpty => count == 0;
 

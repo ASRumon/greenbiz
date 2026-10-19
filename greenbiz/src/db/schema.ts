@@ -169,8 +169,24 @@ export const transactions = sqliteTable(
 		note: text("note"),
 		/** cash | bkash | nagad | rocket | upay | upi | other. Null on legacy rows. */
 		paymentMethod: text("payment_method"),
-		/** Client-generated sale id, for idempotent retries (including merged sales). */
+		/**
+		 * Client-generated sale id, for idempotent retries (including merged and
+		 * split sales). A split sale has two rows with the same id: the mobile
+		 * money row and the cash balance row.
+		 */
 		saleId: text("sale_id"),
+		/**
+		 * The list-price bill before a round-off/discount. A shop that rounds
+		 * ৳257 down to ৳250 stores 25700 here. Zero for manual payments and on
+		 * the cash half of a split sale (the primary row carries the bill).
+		 */
+		subtotalMinor: integer("subtotal_minor").notNull().default(0),
+		/**
+		 * List-price bill minus the amount actually collected. A shop that
+		 * rounds ৳257 down to ৳250 stores 700 here and records 25000 as the
+		 * inflow. Zero for manual payments and ordinary sales.
+		 */
+		discountMinor: integer("discount_minor").notNull().default(0),
 		/**
 		 * False when the owner marked this as personal, not business. Personal rows
 		 * stay visible in the ledger but are excluded from credit scoring and
@@ -184,9 +200,11 @@ export const transactions = sqliteTable(
 		index("transactions_shop_direction_idx").on(t.shopId, t.direction),
 		// One SMS can produce at most one transaction.
 		uniqueIndex("transactions_sms_unique_idx").on(t.smsId),
-		// One client sale can only ever produce one transaction row, even when it
-		// merges into an existing SMS payment row.
-		uniqueIndex("transactions_sale_id_unique_idx").on(t.saleId),
+		// A client sale normally produces one row. A split payment (part mobile
+		// money, part cash) produces two rows that share the sale id, so this is
+		// deliberately NOT unique. Idempotency is enforced by the sale endpoint,
+		// which looks up every row for the sale before writing.
+		index("transactions_sale_id_idx").on(t.saleId),
 	],
 );
 

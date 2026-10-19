@@ -22,7 +22,28 @@ class AppCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+        // A soft, low-contrast lift: enough to separate the cards from the
+        // grey page without turning the tab into a pile of shadows.
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 14,
+            offset: Offset(0, 5),
+          ),
+          BoxShadow(
+            color: Color(0x05000000),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -40,10 +61,11 @@ class AppCard extends StatelessWidget {
                           title!,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
                           ),
                         ),
                         if (subtitle != null) ...<Widget>[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Text(
                             subtitle!,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -61,6 +83,69 @@ class AppCard extends StatelessWidget {
             child,
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A quiet inline note: an icon, a short heading, and optional detail.
+///
+/// Used for "not configured yet", "permission off" and similar states that are
+/// informative rather than errors, so they read the same everywhere.
+class NoticeBox extends StatelessWidget {
+  const NoticeBox({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.color,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? message;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color tint = color ?? theme.colorScheme.onSurfaceVariant;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: tint.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, size: 18, color: tint),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (message != null) ...<Widget>[
+                  const SizedBox(height: 3),
+                  Text(
+                    message!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -347,12 +432,17 @@ class StatusChip extends StatelessWidget {
             Icon(icon, size: dense ? 12 : 14, color: color),
             const SizedBox(width: 4),
           ],
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: dense ? 11 : 12,
-              fontWeight: FontWeight.w600,
+          // Flexible so a long label shrinks instead of overflowing its row.
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: dense ? 11 : 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

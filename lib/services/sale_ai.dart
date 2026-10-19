@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../core/api_client.dart';
+import '../core/money.dart';
+import '../core/quantity_input.dart';
 import '../models/product.dart';
 import '../models/sale.dart';
 
@@ -75,13 +77,26 @@ class AiSettings {
 /* Wire types between the two AI passes                                        */
 /* -------------------------------------------------------------------------- */
 
-/// One requested line from pass 1: "3 kg rice".
+/// One requested line from pass 1: "3 kg rice" or "30 taka onion".
 class SaleIntent {
-  const SaleIntent({required this.query, this.quantity, this.unit});
+  const SaleIntent({
+    required this.query,
+    this.quantity,
+    this.unit,
+    this.amountMinor,
+  });
 
   final String query;
   final double? quantity;
   final String? unit;
+
+  /// Money the customer wants to spend on this line, in minor units.
+  ///
+  /// "30 taka onion" gives 3000. The quantity is then worked out from the
+  /// product's price; the amount is never treated as a quantity.
+  final int? amountMinor;
+
+  bool get isAmountBased => (amountMinor ?? 0) > 0;
 }
 
 /// One product the model selected in pass 2.
@@ -95,6 +110,8 @@ class SaleMatch {
 
   final String query;
   final String productId;
+
+  /// The final quantity the AI worked out, including amount-based lines.
   final double quantity;
   final double confidence;
 }
@@ -125,12 +142,26 @@ You are the checkout assistant for a small shop.
 Split the sentence into one item per product the customer is buying.
 Return ONLY a JSON object. No prose, no markdown.
 
-{"items":[{"query":"<the product words>","quantity":<number or null>,"unit":"<unit or null>"}]}
+{"items":[{"query":"<the product words>","quantity":<number or null>,"unit":"<unit or null>","amount":<Taka or null>}]}
 
 Rules:
 - One array entry per product. Never merge two products into one "query".
 - "1 kg rice and two litre milk" means TWO items: rice (quantity 1, unit kg)
   and milk (quantity 2, unit litre).
+- "30 taka onion and 20 taka milk" means TWO items: onion (amount 30) and
+  milk (amount 20).
+- A money amount belongs ONLY to the product it is said with.
+  "70 taka onion and a calculator" means onion (amount 70) and calculator
+  (amount null, quantity 1). Never copy an amount to another product.
+- A product sold by the piece (calculator, bottle, packet) has a fixed price.
+  Never use an amount to make a fractional piece of it.
+- "amount" is the TOTAL money the customer wants to spend on that item, in
+  Taka. "30 taka", "30 tk", "৳30", "30 takar" all mean amount 30.
+  Use null when no money was mentioned.
+- Never put a money amount in "quantity". "30 taka onion" has quantity null,
+  amount 30. Pass 2 computes the weight from the shop's price.
+- If both a weight and a total amount are said ("2 kg onion, 120 taka"), keep
+  both; pass 2 uses the amount.
 - Keep the shopkeeper's own words in "query". Do not translate or invent brands.
 - "quantity" must be a number: "a dozen" is 12, "half a kilo" is 0.5, "two" is 2.
 - If no quantity was said, use null. Never guess a quantity.
@@ -152,6 +183,7 @@ String buildMatchPrompt({
         'query': intent.query,
         'quantity': intent.quantity,
         if (intent.unit != null) 'unit': intent.unit,
+        if (intent.amountMinor != null) 'amountMinor': intent.amountMinor,
       },
   ];
 
@@ -181,7 +213,23 @@ Rules:
 - If a requested item has a plausible candidate, choose it. Use null only when none is plausible.
 - Never merge two requested items into one output item.
 - Prefer an exact product over a similar one.
-- Use the requested quantity. If the request had no quantity, use 1.
+- "amountMinor" is money the customer wants to spend (Taka x 100), not a
+  quantity. When it is present, compute the FINAL quantity yourself from the
+  chosen product's priceMinor: quantity = amountMinor / priceMinor, rounded to
+  at most 3 decimals. The line total (quantity x priceMinor) must round back to
+  amountMinor.
+- A product sold by the piece, box, packet or bottle must have a whole-number
+  quantity. Never return a fraction of one:
+  * If the amount buys whole items, return that count.
+  * If it buys whole items plus a remainder, return the whole count and add a
+    note to "unmatched" such as "calculator: 2 piece = ৳1,600.00, ৳200.00 left
+    over".
+  * If it cannot buy one whole item, return 1 and add "calculator: sold per
+    piece; 1 piece is ৳800.00" to "unmatched".
+- Use the requested quantity when no amountMinor is present. If neither exists,
+  use 1.
+- Never copy an amount from one requested item to another. An amount belongs
+  only to the item it was requested with.
 - "confidence" is a number from 0 to 1.
 - List every query you could not match in "unmatched".
 - Do not add products the customer did not mention.
@@ -239,6 +287,65 @@ double? _asQuantity(dynamic value) {
   return double.tryParse(match.group(0)!);
 }
 
+/// A Taka amount ("30", "30.50", "৳30") as minor units.
+int? _asAmountMinor(dynamic value) {
+  if (value == null) return null;
+
+  final String text = normalizeNumericDigits(value.toString());
+  final RegExpMatch? match = RegExp(r'\d+(?:[.,]\d{1,2})?').firstMatch(text);
+  if (match == null) return null;
+
+  final minor = parseMajorToMinor(match.group(0)!.replaceAll(',', '.'));
+  return (minor == null || minor <= 0) ? null : minor;
+}
+
+/// An already-minor-unit amount from the model.
+int? _asMinorUnits(dynamic value) {
+  if (value == null) return null;
+  final int? parsed = value is num
+      ? value.round()
+      : int.tryParse(value.toString());
+  return (parsed == null || parsed <= 0) ? null : parsed;
+}
+
+/// Merges lines that ask for the same product more than once.
+///
+/// Candidate lookup and matching are keyed by the query, so two "onion" lines
+/// would otherwise collapse into one and lose an amount. Summing them keeps
+/// "30 taka onion and 20 taka onion" as one ৳50 line.
+List<SaleIntent> mergeDuplicateIntents(List<SaleIntent> intents) {
+  final Map<String, SaleIntent> merged = <String, SaleIntent>{};
+
+  for (final SaleIntent intent in intents) {
+    final String key = normalizeForSaleSearch(intent.query);
+    if (key.isEmpty) continue;
+
+    final SaleIntent? previous = merged[key];
+    if (previous == null) {
+      merged[key] = intent;
+      continue;
+    }
+
+    final double? quantity =
+        previous.quantity == null && intent.quantity == null
+        ? null
+        : (previous.quantity ?? 0) + (intent.quantity ?? 0);
+    final int? amountMinor =
+        previous.amountMinor == null && intent.amountMinor == null
+        ? null
+        : (previous.amountMinor ?? 0) + (intent.amountMinor ?? 0);
+
+    merged[key] = SaleIntent(
+      query: previous.query,
+      quantity: quantity,
+      unit: previous.unit ?? intent.unit,
+      amountMinor: amountMinor,
+    );
+  }
+
+  return merged.values.toList(growable: false);
+}
+
 /// Parses pass 1. Never throws: a malformed reply becomes an empty list.
 List<SaleIntent> parseSaleIntents(String raw) {
   final json = extractJsonObject(raw);
@@ -252,6 +359,7 @@ List<SaleIntent> parseSaleIntents(String raw) {
     String? query;
     double? quantity;
     String? unit;
+    int? amountMinor;
 
     if (entry is String) {
       query = entry;
@@ -264,15 +372,25 @@ List<SaleIntent> parseSaleIntents(String raw) {
                   map['product'] ??
                   map['item'])
               ?.toString();
-      quantity = _asQuantity(map['quantity'] ?? map['qty'] ?? map['amount']);
+      quantity = _asQuantity(map['quantity'] ?? map['qty']);
       unit = (map['unit'] ?? map['uom'])?.toString();
+      amountMinor =
+          _asMinorUnits(map['amountMinor']) ??
+          _asAmountMinor(map['amount'] ?? map['amountTaka'] ?? map['taka']);
     }
 
     final trimmed = query?.trim();
     if (trimmed == null || trimmed.isEmpty) continue;
     if (quantity != null && quantity <= 0) quantity = null;
 
-    intents.add(SaleIntent(query: trimmed, quantity: quantity, unit: unit));
+    intents.add(
+      SaleIntent(
+        query: trimmed,
+        quantity: quantity,
+        unit: unit,
+        amountMinor: amountMinor,
+      ),
+    );
     if (intents.length >= 20) break;
   }
   return intents;
@@ -485,14 +603,15 @@ ParsedSaleMatches parseSaleMatches(
       if (quantity <= 0) continue;
 
       final confidence = (_asQuantity(map['confidence']) ?? 1).clamp(0, 1);
-      final query = (map['query'] ?? map['term'] ?? allowed[id]!.productName)
+      var query = (map['query'] ?? map['term'] ?? allowed[id]!.productName)
           .toString()
           .trim();
+      if (query.isEmpty) query = allowed[id]!.productName;
 
       final previous = byProduct[id];
       byProduct[id] = SaleMatch(
         productId: id,
-        query: query.isEmpty ? allowed[id]!.productName : query,
+        query: query,
         quantity: (previous?.quantity ?? 0) + quantity,
         confidence: confidence.toDouble(),
       );
@@ -709,7 +828,12 @@ class SaleAiService {
         continue;
       }
 
-      if (match.quantity > product.stockQuantity) {
+      // The AI already turned "30 taka onion" into the right quantity (and
+      // kept piece-based products whole). Use its number as-is; the app only
+      // enforces stock.
+      final double quantity = match.quantity;
+
+      if (quantity > product.stockQuantity) {
         // Sell what is actually on the shelf, and say so rather than silently
         // recording a negative stock level.
         lines.add(SaleLine(product: product, quantity: product.stockQuantity));
@@ -717,7 +841,7 @@ class SaleAiService {
           '${match.query}: only ${product.stockLabel} ${product.unit} left',
         );
       } else {
-        lines.add(SaleLine(product: product, quantity: match.quantity));
+        lines.add(SaleLine(product: product, quantity: quantity));
       }
     }
 
@@ -750,6 +874,14 @@ class SaleAiService {
       if (lines.any((line) => line.product.id == fallback.id)) continue;
       if (fallback.stockQuantity <= 0) {
         unmatched.add('${intent.query}: out of stock');
+        continue;
+      }
+
+      // An amount-based line needs the AI's arithmetic (and its whole-piece
+      // decision). If pass 2 dropped it, ask the owner to retry rather than
+      // guessing a quantity here.
+      if (intent.isAmountBased) {
+        unmatched.add('${intent.query}: the AI did not match this item');
         continue;
       }
 
@@ -793,7 +925,8 @@ class SaleAiService {
             'Profile.',
       );
     }
-    return expandCompoundIntents(parseSaleIntents(raw));
+
+    return mergeDuplicateIntents(expandCompoundIntents(parseSaleIntents(raw)));
   }
 
   /// Pass 2.

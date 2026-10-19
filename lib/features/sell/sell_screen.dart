@@ -10,6 +10,7 @@ import '../../core/api_client.dart';
 import '../../core/money.dart';
 import '../../core/payment_tolerance.dart';
 import '../../core/providers.dart';
+import '../../core/quantity_input.dart';
 import '../../core/theme.dart';
 import '../../models/live_sms_payment.dart';
 import '../../models/product.dart';
@@ -21,6 +22,7 @@ import '../finance/finance_controller.dart';
 import '../inventory/inventory_controller.dart';
 import '../profile/ai_settings_controller.dart';
 import 'payment_picker_sheet.dart';
+import 'quantity_dialog.dart';
 import 'swipe_confirm_bar.dart';
 
 /// Turn inventory into money.
@@ -45,10 +47,22 @@ class _SellScreenState extends ConsumerState<SellScreen> {
   final TextEditingController _transcript = TextEditingController();
   final TextEditingController _search = TextEditingController();
   final TextEditingController _customer = TextEditingController();
+  final TextEditingController _cash = TextEditingController();
   final SpeechToText _speech = SpeechToText();
 
   final List<SaleLine> _lines = <SaleLine>[];
   LiveSmsPayment? _livePayment;
+
+  /// A message picked from the ledger (rather than captured live).
+  PaymentChoice? _pickedPayment;
+
+  /// True once the owner typed a cash balance, so a cart change does not
+  /// overwrite what they entered.
+  bool _cashEdited = false;
+
+  /// What the shopkeeper decided to collect after a round-off/discount. Null
+  /// means the full bill.
+  int? _payableOverrideMinor;
 
   bool _speechReady = false;
   bool _isListening = false;
@@ -76,6 +90,7 @@ class _SellScreenState extends ConsumerState<SellScreen> {
     _transcript.dispose();
     _search.dispose();
     _customer.dispose();
+    _cash.dispose();
     super.dispose();
   }
 
@@ -87,8 +102,114 @@ class _SellScreenState extends ConsumerState<SellScreen> {
   /* Cart                                                                     */
   /* ------------------------------------------------------------------------ */
 
-  int get _totalMinor =>
+  /// The bill the catalogue prices add up to.
+  int get _billMinor =>
       _lines.fold(0, (int sum, SaleLine line) => sum + line.lineTotalMinor);
+
+  /// What the customer is actually asked to pay after a round-off/discount.
+  int get _totalMinor {
+    final int bill = _billMinor;
+    final int? override = _payableOverrideMinor;
+    if (override == null) return bill;
+    return override.clamp(0, bill);
+  }
+
+  int get _discountMinor => _billMinor - _totalMinor;
+
+  bool get _hasPayment => _livePayment != null || _pickedPayment != null;
+
+  /// What the mobile-money message says arrived.
+  int get _receivedMinor =>
+      _livePayment?.amountMinor ?? _pickedPayment?.amountMinor ?? 0;
+
+  String get _receivedMethod =>
+      _livePayment?.method ?? _pickedPayment?.method ?? 'cash';
+
+  String get _receivedLabel => paymentMethodLabel(_receivedMethod);
+
+  /// Cash still owed after the attached message.
+  int get _cashBalanceMinor {
+    final int gap = _totalMinor - _receivedMinor;
+    return gap > 0 ? gap : 0;
+  }
+
+  /// True when the attached message covers the whole amount to collect (or is
+  /// inside the cash-out band).
+  bool get _paymentCoversTotal => PaymentAmountMatch(
+    receivedMinor: _receivedMinor,
+    expectedMinor: _totalMinor,
+  ).isAttachable;
+
+  /// Keeps the cash field in step with the cart and the attached message.
+  ///
+  /// Called after every change that moves the amount to collect. Once the owner
+  /// has typed a balance, their number wins until they attach a different
+  /// payment or clear the field.
+  void _syncCashSuggestion() {
+    if (!_hasPayment) {
+      if (_cash.text.isNotEmpty) _cash.clear();
+      _cashEdited = false;
+      return;
+    }
+    if (_cashEdited) return;
+
+    final int gap = _cashBalanceMinor;
+    final String next = gap > 0 ? minorToEditable(gap) : '';
+    if (_cash.text != next) {
+      _cash.value = TextEditingValue(
+        text: next,
+        selection: TextSelection.collapsed(offset: next.length),
+      );
+    }
+  }
+
+  void _clearPayment() {
+    setState(() {
+      _livePayment = null;
+      _pickedPayment = null;
+      _cash.clear();
+      _cashEdited = false;
+    });
+  }
+
+  /// Sets the amount the customer actually hands over, as a round-off or
+  /// discount from the bill.
+  void _setPayable(int? amountMinor) {
+    setState(() {
+      _payableOverrideMinor = amountMinor?.clamp(0, _billMinor);
+      _syncCashSuggestion();
+    });
+  }
+
+  /// Round-down suggestions for the current bill.
+  List<int> get _roundOffOptions => roundDownOptions(_billMinor);
+
+  bool get _paymentSummaryBalanced {
+    if (!_hasPayment) return false;
+    if (_receivedMinor >= _totalMinor) return _paymentCoversTotal;
+    final int cash = parseMoneyText(_cash.text) ?? 0;
+    return _receivedMinor + cash == _totalMinor;
+  }
+
+  String get _paymentSummaryLine {
+    if (!_hasPayment) return '';
+    final int cash = parseMoneyText(_cash.text) ?? 0;
+    if (_receivedMinor >= _totalMinor) {
+      return 'Paid by $_receivedLabel ${formatMinor(_receivedMinor)}';
+    }
+    return '$_receivedLabel ${formatMinor(_receivedMinor)} + cash '
+        '${formatMinor(cash)}';
+  }
+
+  Future<void> _promptPayable() async {
+    final int? value = await showDialog<int>(
+      context: context,
+      builder: (BuildContext dialogContext) =>
+          _PayableDialog(billMinor: _billMinor, initialMinor: _totalMinor),
+    );
+    if (!mounted || value == null) return;
+    _setPayable(value == _billMinor ? null : value);
+  }
 
   void _addProduct(Product product) {
     if (product.stockQuantity <= 0) {
@@ -121,6 +242,26 @@ class _SellScreenState extends ConsumerState<SellScreen> {
       } else {
         _lines[index] = _lines[index].copyWith(quantity: current + 1);
       }
+      _syncCashSuggestion();
+    });
+  }
+
+  /// Sets one product's quantity, adding the line if it is not in the cart yet.
+  ///
+  /// Used by both the quantity editor and the "sell by amount" dialog, where
+  /// ৳20 of onion becomes 0.333 kg automatically.
+  void _setLineQuantity(Product product, double quantity) {
+    final int index = _lines.indexWhere(
+      (SaleLine line) => line.product.id == product.id,
+    );
+
+    setState(() {
+      if (index == -1) {
+        _lines.add(SaleLine(product: product, quantity: quantity));
+      } else {
+        _lines[index] = _lines[index].copyWith(quantity: quantity);
+      }
+      _syncCashSuggestion();
     });
   }
 
@@ -147,77 +288,43 @@ class _SellScreenState extends ConsumerState<SellScreen> {
       if (index != -1) {
         _lines[index] = line.copyWith(quantity: next);
       }
+      _syncCashSuggestion();
     });
   }
 
   void _removeLine(String productId) {
     setState(() {
       _lines.removeWhere((SaleLine line) => line.product.id == productId);
+      // A discount belongs to the receipt that was on screen. Once the last
+      // item is gone, do not carry a stale amount into the next sale.
+      if (_lines.isEmpty) _payableOverrideMinor = null;
+      _syncCashSuggestion();
     });
   }
 
-  Future<void> _promptQuantity(SaleLine line) async {
-    final TextEditingController controller = TextEditingController(
-      text: line.quantityLabel,
-    );
-
+  /// Opens the quantity editor. With [byAmount], the dialog starts on the money
+  /// side: type ৳20 and it works out 0.333 kg at the product's price.
+  Future<void> _promptQuantity(SaleLine line, {bool byAmount = false}) async {
     final double? value = await showDialog<double>(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: Text(line.product.productName),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-          ],
-          decoration: InputDecoration(
-            labelText: 'Quantity in ${line.product.unit}',
-            helperText: 'In stock: ${line.product.stockLabel}',
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final double? parsed = double.tryParse(controller.text.trim());
-              Navigator.of(dialogContext).pop(parsed);
-            },
-            child: const Text('Set'),
-          ),
-        ],
+      builder: (BuildContext dialogContext) => QuantityDialog(
+        product: line.product,
+        initialQuantity: line.quantity,
+        startWithAmount: byAmount,
       ),
     );
 
-    controller.dispose();
     if (!mounted || value == null) return;
 
     if (value <= 0) {
       _removeLine(line.product.id);
       return;
     }
-    if (value > line.product.stockQuantity + 1e-9) {
-      showAppMessage(
-        context,
-        'Only ${line.product.stockLabel} ${line.product.unit} in stock.',
-        isError: true,
-      );
-      return;
-    }
-
-    setState(() {
-      final int index = _lines.indexWhere(
-        (SaleLine existing) => existing.product.id == line.product.id,
-      );
-      if (index != -1) {
-        _lines[index] = line.copyWith(quantity: value);
-      }
-    });
+    _setLineQuantity(line.product, value);
   }
+
+  Future<void> _promptAmount(Product product) =>
+      _promptQuantity(SaleLine(product: product, quantity: 1), byAmount: true);
 
   Future<void> _clearCart() async {
     if (_lines.isEmpty) return;
@@ -234,6 +341,9 @@ class _SellScreenState extends ConsumerState<SellScreen> {
       _lines.clear();
       _unmatched = const <String>[];
       _aiMessage = null;
+      _payableOverrideMinor = null;
+      _cash.clear();
+      _cashEdited = false;
     });
   }
 
@@ -408,6 +518,7 @@ class _SellScreenState extends ConsumerState<SellScreen> {
             : 'Matched ${result.lines.length} '
                   'item${result.lines.length == 1 ? '' : 's'}. Review the '
                   'receipt below.';
+        _syncCashSuggestion();
       });
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -449,47 +560,92 @@ class _SellScreenState extends ConsumerState<SellScreen> {
   /* Confirm                                                                  */
   /* ------------------------------------------------------------------------ */
 
-  Future<void> _confirmCash() => _confirm(paymentMethod: 'cash');
+  Future<void> _confirmCash() async {
+    if (_hasPayment) {
+      showAppMessage(
+        context,
+        'A payment message is attached. Swipe left to record it, or remove '
+        'the payment first.',
+        isError: true,
+      );
+      return;
+    }
+    await _confirm(paymentMethod: 'cash');
+  }
 
   Future<void> _confirmDigital() async {
     if (_lines.isEmpty || _isSaving) return;
 
     final LiveSmsPayment? live = _livePayment;
-    if (live != null) {
-      final PaymentAmountMatch match = PaymentAmountMatch(
-        receivedMinor: live.amountMinor,
-        expectedMinor: _totalMinor,
-      );
+    final PaymentChoice? picked = _pickedPayment;
 
-      if (!match.isAttachable) {
-        final bool proceed = await confirmDialog(
-          context,
-          title: 'The totals do not match',
-          message:
-              'This payment is ${match.differenceLabel} away from the receipt. '
-              'If you continue, the payment and the sale are recorded as two '
-              'separate entries.',
-          confirmLabel: 'Record separately',
-          destructive: true,
-        );
-        if (!mounted || !proceed) return;
+    if (live == null && picked == null) {
+      await _pickAndConfirmPayment();
+      return;
+    }
 
-        await _confirm(
-          paymentMethod: live.method,
-          paymentReference: live.reference,
-        );
-        return;
-      }
+    final int received = live?.amountMinor ?? picked?.amountMinor ?? 0;
+    final String method = live?.method ?? picked!.method;
+    final String? reference = live?.reference ?? picked?.reference;
+    final String? smsId = picked?.smsId;
 
+    final PaymentAmountMatch match = PaymentAmountMatch(
+      receivedMinor: received,
+      expectedMinor: _totalMinor,
+    );
+
+    if (match.isAttachable) {
       await _confirm(
-        paymentMethod: live.method,
-        paymentReference: live.reference,
+        paymentMethod: method,
+        paymentReference: reference,
+        smsId: smsId,
         liveSms: live,
       );
       return;
     }
 
-    await _pickAndConfirmPayment();
+    // Part mobile money, part cash: the message is short of the amount to
+    // collect. The cash field is prefilled with the gap, so a tap on the
+    // confirm bar only fails when the owner deliberately changed it.
+    if (received > 0 && received < _totalMinor) {
+      final int gap = _totalMinor - received;
+      final int? cashMinor = parseMoneyText(_cash.text);
+
+      if (cashMinor == null || cashMinor != gap) {
+        setState(() => _cashEdited = true);
+        showAppMessage(
+          context,
+          'The customer paid ${formatMinor(received)} by '
+          '${paymentMethodLabel(method)}. Enter the ${formatMinor(gap)} '
+          'balance paid in cash.',
+          isError: true,
+        );
+        return;
+      }
+
+      await _confirm(
+        paymentMethod: method,
+        paymentReference: reference,
+        smsId: smsId,
+        liveSms: live,
+        cashMinor: gap,
+      );
+      return;
+    }
+
+    final bool proceed = await confirmDialog(
+      context,
+      title: 'The totals do not match',
+      message:
+          'This payment is ${match.differenceLabel} away from the amount to '
+          'collect. If you continue, the payment and the sale are recorded as '
+          'two separate entries.',
+      confirmLabel: 'Record separately',
+      destructive: true,
+    );
+    if (!mounted || !proceed) return;
+
+    await _confirm(paymentMethod: method, paymentReference: reference);
   }
 
   Future<void> _pickAndConfirmPayment() async {
@@ -499,10 +655,62 @@ class _SellScreenState extends ConsumerState<SellScreen> {
     );
     if (choice == null || !mounted) return;
 
+    final int? received = choice.amountMinor;
+
+    // A method picked by hand with no message: the owner knows it was paid.
+    if (choice.smsId == null || received == null) {
+      await _confirm(
+        paymentMethod: choice.method,
+        paymentReference: choice.reference,
+      );
+      return;
+    }
+
+    final PaymentAmountMatch match = PaymentAmountMatch(
+      receivedMinor: received,
+      expectedMinor: _totalMinor,
+    );
+
+    if (match.isAttachable) {
+      await _confirm(
+        paymentMethod: choice.method,
+        paymentReference: choice.reference,
+        smsId: choice.smsId,
+      );
+      return;
+    }
+
+    if (received < _totalMinor) {
+      final int gap = _totalMinor - received;
+      setState(() {
+        _pickedPayment = choice;
+        _cashEdited = false;
+        _syncCashSuggestion();
+      });
+      showAppMessage(
+        context,
+        '${paymentMethodLabel(choice.method)} ${formatMinor(received)} '
+        'attached. Enter the ${formatMinor(gap)} the customer paid in cash, '
+        'then swipe left.',
+      );
+      return;
+    }
+
+    final bool proceed = await confirmDialog(
+      context,
+      title: 'The totals do not match',
+      message:
+          'This message is ${match.differenceLabel} away from the amount to '
+          'collect. If you continue, the payment and the sale are recorded as '
+          'two separate entries.',
+      confirmLabel: 'Record separately',
+      destructive: true,
+    );
+    if (!mounted || !proceed) return;
+
     await _confirm(
       paymentMethod: choice.method,
       paymentReference: choice.reference,
-      smsId: choice.smsId,
     );
   }
 
@@ -511,6 +719,7 @@ class _SellScreenState extends ConsumerState<SellScreen> {
     String? paymentReference,
     String? smsId,
     LiveSmsPayment? liveSms,
+    int cashMinor = 0,
   }) async {
     final shop = ref.read(activeShopProvider);
     if (shop == null) {
@@ -536,6 +745,8 @@ class _SellScreenState extends ConsumerState<SellScreen> {
             paymentReference: paymentReference,
             smsId: smsId,
             liveSms: liveSms,
+            payableMinor: _totalMinor,
+            cashMinor: cashMinor,
           );
 
       // The ledger, stock and score all changed on the server.
@@ -564,6 +775,31 @@ class _SellScreenState extends ConsumerState<SellScreen> {
       if (mounted) setState(() => _isSaving = false);
     }
   }
+
+  Widget _receiptRow(
+    ThemeData theme, {
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) => Row(
+    children: <Widget>[
+      Expanded(
+        child: Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+      Text(
+        value,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: valueColor,
+        ),
+      ),
+    ],
+  );
 
   Future<void> _showReceipt(SaleReceipt receipt) => showDialog<void>(
     context: context,
@@ -608,11 +844,30 @@ class _SellScreenState extends ConsumerState<SellScreen> {
                   ),
                 ),
               const Divider(),
+              if (receipt.hasDiscount) ...<Widget>[
+                _receiptRow(
+                  theme,
+                  label: 'Bill',
+                  value: formatMinor(
+                    receipt.billMinor,
+                    currency: receipt.currency,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _receiptRow(
+                  theme,
+                  label: 'Discount',
+                  value:
+                      '-${formatMinor(receipt.discountMinor, currency: receipt.currency)}',
+                  valueColor: GreenBizTheme.scoreMedium,
+                ),
+                const SizedBox(height: 4),
+              ],
               Row(
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      'Total',
+                      receipt.hasDiscount ? 'Collected' : 'Total',
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -628,24 +883,43 @@ class _SellScreenState extends ConsumerState<SellScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      'Paid by',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+              if (receipt.isSplit) ...<Widget>[
+                _receiptRow(
+                  theme,
+                  label: 'Paid by ${receipt.paymentMethodLabel}',
+                  value: formatMinor(
+                    receipt.digitalMinor,
+                    currency: receipt.currency,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _receiptRow(
+                  theme,
+                  label: 'Cash on hand',
+                  value: formatMinor(
+                    receipt.cashMinor,
+                    currency: receipt.currency,
+                  ),
+                ),
+              ] else
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'Paid by',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
-                  ),
-                  Text(
-                    receipt.paymentMethodLabel,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    Text(
+                      receipt.paymentMethodLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               if (receipt.reference != null) ...<Widget>[
                 const SizedBox(height: 2),
                 Text(
@@ -736,6 +1010,9 @@ class _SellScreenState extends ConsumerState<SellScreen> {
                     if (_livePayment != null) ...<Widget>[
                       _buildLivePaymentCard(theme),
                       const SizedBox(height: 12),
+                    ] else if (_pickedPayment != null) ...<Widget>[
+                      _buildPickedPaymentCard(theme),
+                      const SizedBox(height: 12),
                     ],
                     _buildVoiceCard(theme),
                     const SizedBox(height: 12),
@@ -797,21 +1074,30 @@ class _SellScreenState extends ConsumerState<SellScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Swipe left when you finish the receipt and this message is '
-              'linked to the sale, so the money is counted once.',
+              _cashBalanceMinor > 0
+                  ? 'Part of this sale was paid in cash. Enter the balance '
+                        'below, then swipe left — the message and the cash are '
+                        'recorded together.'
+                  : 'Swipe left when you finish the receipt and this message is '
+                        'linked to the sale, so the money is counted once.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             if (match != null &&
+                match.fit == PaymentAmountFit.outside &&
+                live.amountMinor < _totalMinor) ...<Widget>[
+              const SizedBox(height: 10),
+              _buildCashEditor(theme),
+            ] else if (match != null &&
                 match.fit == PaymentAmountFit.outside) ...<Widget>[
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerLeft,
                 child: StatusChip(
                   label:
-                      'Receipt total is ${match.differenceLabel} away — this '
-                      'payment will stay a separate entry',
+                      'Amount to collect is ${match.differenceLabel} away — '
+                      'this payment will stay a separate entry',
                   color: GreenBizTheme.scoreMedium,
                   dense: true,
                 ),
@@ -868,10 +1154,150 @@ class _SellScreenState extends ConsumerState<SellScreen> {
                 ),
                 const Spacer(),
                 TextButton(
-                  onPressed: () => setState(() => _livePayment = null),
+                  onPressed: _clearPayment,
                   child: const Text('Detach'),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The cash half of a split payment.
+  ///
+  /// It is prefilled with exactly what is missing, so the normal flow is one
+  /// swipe. The helper text shows the arithmetic instead of a red validation
+  /// error, which is what the old quantity field did.
+  Widget _buildCashEditor(ThemeData theme) {
+    final int received = _receivedMinor;
+    final int gap = _cashBalanceMinor;
+    final int entered = parseMoneyText(_cash.text) ?? 0;
+
+    final bool balanced = gap > 0 && entered == gap;
+    final bool over = entered > gap;
+
+    final String helper = gap <= 0
+        ? 'The message already covers the whole amount.'
+        : balanced
+        ? 'Fully paid: ${formatMinor(received)} + '
+              '${formatMinor(entered)} cash.'
+        : over
+        ? 'That is ${formatMinor(entered - gap)} more than the balance.'
+        : '${formatMinor(gap - entered)} still to collect in cash.';
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (balanced ? GreenBizTheme.inflow : GreenBizTheme.scoreMedium)
+              .withValues(alpha: 0.35),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          TextField(
+            controller: _cash,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: <TextInputFormatter>[
+              DecimalInputFormatter(decimalDigits: 2),
+            ],
+            onChanged: (_) => setState(() => _cashEdited = true),
+            decoration: InputDecoration(
+              labelText: 'Cash on hand',
+              prefixText: '৳ ',
+              helperText: helper,
+              helperMaxLines: 2,
+              helperStyle: theme.textTheme.bodySmall?.copyWith(
+                color: balanced
+                    ? GreenBizTheme.inflow
+                    : GreenBizTheme.scoreMedium,
+              ),
+            ),
+          ),
+          // The other reading of a short payment: the shop gave a discount
+          // instead of taking the rest in cash.
+          if (gap > 0 && received > 0)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _isSaving ? null : () => _setPayable(received),
+                icon: const Icon(Icons.local_offer_outlined, size: 16),
+                label: Text('Give ${formatMinor(gap)} discount instead'),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPickedPaymentCard(ThemeData theme) {
+    final PaymentChoice picked = _pickedPayment!;
+    final int received = picked.amountMinor ?? 0;
+    final String label = paymentMethodLabel(picked.method);
+
+    return Card(
+      color: GreenBizTheme.inflow.withValues(alpha: 0.06),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: GreenBizTheme.inflow.withValues(alpha: 0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Icon(
+                  Icons.south_west_rounded,
+                  color: GreenBizTheme.inflow,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Payment message attached · $label',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  formatMinor(received),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: GreenBizTheme.inflow,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _cashBalanceMinor > 0
+                  ? 'This message pays ${formatMinor(received)} of '
+                        '${formatMinor(_totalMinor)}. Enter the cash balance '
+                        'below, then swipe left.'
+                  : 'This message pays the whole amount. Swipe left to record '
+                        'it.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (_cashBalanceMinor > 0) ...<Widget>[
+              const SizedBox(height: 10),
+              _buildCashEditor(theme),
+            ],
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _clearPayment,
+                child: const Text('Remove payment'),
+              ),
             ),
           ],
         ),
@@ -1044,6 +1470,7 @@ class _SellScreenState extends ConsumerState<SellScreen> {
                     _ProductRow(
                       product: shown[i],
                       onAdd: () => _addProduct(shown[i]),
+                      onSellByAmount: () => _promptAmount(shown[i]),
                     ),
                   ],
                   if (filtered.length > shown.length) ...<Widget>[
@@ -1098,21 +1525,97 @@ class _SellScreenState extends ConsumerState<SellScreen> {
               children: <Widget>[
                 Expanded(
                   child: Text(
-                    'Total',
+                    'Amount to collect',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-                Text(
-                  formatMinor(_totalMinor),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: GreenBizTheme.inflow,
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: _isSaving ? null : _promptPayable,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          formatMinor(_totalMinor),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: GreenBizTheme.inflow,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
+            if (_discountMinor > 0) ...<Widget>[
+              const SizedBox(height: 2),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      'Bill ${formatMinor(_billMinor)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  StatusChip(
+                    label: '${formatMinor(_discountMinor)} discount',
+                    color: GreenBizTheme.scoreMedium,
+                    dense: true,
+                  ),
+                ],
+              ),
+            ],
+            if (_roundOffOptions.isNotEmpty ||
+                _payableOverrideMinor != null) ...<Widget>[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: <Widget>[
+                  for (final int option in _roundOffOptions)
+                    ActionChip(
+                      label: Text('Round to ${formatMinor(option)}'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: _isSaving ? null : () => _setPayable(option),
+                    ),
+                  if (_payableOverrideMinor != null)
+                    ActionChip(
+                      avatar: const Icon(Icons.receipt_long_outlined, size: 15),
+                      label: Text('Full ${formatMinor(_billMinor)}'),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: _isSaving ? null : () => _setPayable(null),
+                    ),
+                ],
+              ),
+            ],
+            if (_hasPayment) ...<Widget>[
+              const SizedBox(height: 6),
+              Text(
+                _paymentSummaryLine,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: _paymentSummaryBalanced
+                      ? GreenBizTheme.inflow
+                      : GreenBizTheme.scoreMedium,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _customer,
@@ -1130,6 +1633,15 @@ class _SellScreenState extends ConsumerState<SellScreen> {
             busy: _isSaving,
             onCash: _confirmCash,
             onDigital: _confirmDigital,
+            cashEnabled: !_hasPayment,
+            digitalLabel: _hasPayment
+                ? (_cashBalanceMinor > 0
+                      ? 'Confirm $_receivedLabel + cash'
+                      : 'Confirm $_receivedLabel')
+                : 'Mobile money',
+            hint: _hasPayment
+                ? 'Swipe left to record this $_receivedLabel payment'
+                : 'Swipe right for cash · swipe left for mobile money',
           ),
         ],
       ),
@@ -1142,10 +1654,17 @@ class _SellScreenState extends ConsumerState<SellScreen> {
 /* -------------------------------------------------------------------------- */
 
 class _ProductRow extends StatelessWidget {
-  const _ProductRow({required this.product, required this.onAdd});
+  const _ProductRow({
+    required this.product,
+    required this.onAdd,
+    required this.onSellByAmount,
+  });
 
   final Product product;
   final VoidCallback onAdd;
+
+  /// “Give me ৳20 of onion” — the dialog turns the money into a quantity.
+  final VoidCallback onSellByAmount;
 
   @override
   Widget build(BuildContext context) {
@@ -1191,6 +1710,20 @@ class _ProductRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            IconButton(
+              tooltip: 'Sell by amount',
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+              padding: EdgeInsets.zero,
+              onPressed: outOfStock ? null : onSellByAmount,
+              icon: Icon(
+                Icons.payments_outlined,
+                size: 20,
+                color: outOfStock
+                    ? theme.colorScheme.outline
+                    : theme.colorScheme.primary,
+              ),
+            ),
             Icon(
               outOfStock ? Icons.block_rounded : Icons.add_circle_rounded,
               color: outOfStock
@@ -1276,6 +1809,8 @@ class _SaleLineRow extends StatelessWidget {
                   ),
                   child: Text(
                     line.quantityLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -1331,6 +1866,97 @@ class _StepButton extends StatelessWidget {
       padding: EdgeInsets.zero,
       onPressed: onPressed,
       icon: Icon(icon, size: 18),
+    );
+  }
+}
+
+/// Editor for the amount the customer actually hands over.
+///
+/// The shopkeeper can round ৳257 down to ৳250 or ৳255 here. The difference is
+/// stored as a discount, and every payment comparison on the sale uses this
+/// amount, so a ৳250 bKash message matches exactly.
+class _PayableDialog extends StatefulWidget {
+  const _PayableDialog({required this.billMinor, required this.initialMinor});
+
+  final int billMinor;
+  final int initialMinor;
+
+  @override
+  State<_PayableDialog> createState() => _PayableDialogState();
+}
+
+class _PayableDialogState extends State<_PayableDialog> {
+  late final TextEditingController _amount = TextEditingController(
+    text: minorToEditable(widget.initialMinor),
+  );
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    super.dispose();
+  }
+
+  int? get _entered => parseMoneyText(_amount.text);
+
+  String? get _error {
+    final int? value = _entered;
+    if (value == null) return 'Enter an amount like 250';
+    if (value > widget.billMinor) {
+      return 'Cannot be more than the bill (${formatMinor(widget.billMinor)})';
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final int? entered = _entered;
+    final int discount = entered == null ? 0 : widget.billMinor - entered;
+    final bool canSet = _error == null;
+
+    return AlertDialog(
+      title: const Text('Amount to collect'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            'Bill ${formatMinor(widget.billMinor)}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _amount,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: <TextInputFormatter>[
+              DecimalInputFormatter(decimalDigits: 2),
+            ],
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'Customer pays',
+              prefixText: '৳ ',
+              helperText: discount > 0
+                  ? 'Discount ${formatMinor(discount)}'
+                  : 'Full bill',
+              errorText: _amount.text.trim().isEmpty ? null : _error,
+              errorMaxLines: 2,
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: canSet ? () => Navigator.of(context).pop(entered) : null,
+          child: const Text('Set'),
+        ),
+      ],
     );
   }
 }

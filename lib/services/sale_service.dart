@@ -20,6 +20,8 @@ class SaleService {
     String? reference,
     String? smsId,
     Map<String, dynamic>? liveSms,
+    int? payableMinor,
+    int cashMinor = 0,
   }) => createItems(
     shopId,
     items: <({String productId, double quantity})>[
@@ -33,6 +35,8 @@ class SaleService {
     reference: reference,
     smsId: smsId,
     liveSms: liveSms,
+    payableMinor: payableMinor,
+    cashMinor: cashMinor,
   );
 
   /// Raw-item form used by the sync engine, which holds ids rather than
@@ -47,6 +51,8 @@ class SaleService {
     String? reference,
     String? smsId,
     Map<String, dynamic>? liveSms,
+    int? payableMinor,
+    int cashMinor = 0,
   }) async {
     final json = await _api.post(
       '/shops/$shopId/sales',
@@ -66,6 +72,8 @@ class SaleService {
         'reference': ?reference,
         'smsId': ?smsId,
         'liveSms': ?liveSms,
+        'payableMinor': ?payableMinor,
+        if (cashMinor > 0) 'cashMinor': cashMinor,
       },
     );
     return SaleReceipt.fromJson(json);

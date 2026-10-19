@@ -5,6 +5,7 @@ import {
 	isWithinPaymentTolerance,
 	MIN_PAYMENT_TOLERANCE_MINOR,
 	paymentToleranceMinor,
+	resolveSalePayment,
 } from "../src/lib/paymentTolerance";
 
 /**
@@ -60,5 +61,63 @@ describe("isWithinPaymentTolerance", () => {
 	it("rejects a zero or negative amount", () => {
 		expect(isWithinPaymentTolerance(0, 100000)).toBe(false);
 		expect(isWithinPaymentTolerance(-1000, 100000)).toBe(false);
+	});
+});
+
+describe("resolveSalePayment", () => {
+	it("merges an exact message", () => {
+		expect(resolveSalePayment({ receivedMinor: 40000, totalMinor: 40000 })).toEqual({
+			mode: "merge",
+		});
+	});
+
+	it("merges a message inside the cash-out band", () => {
+		expect(resolveSalePayment({ receivedMinor: 40160, totalMinor: 40000 })).toEqual({
+			mode: "merge",
+		});
+	});
+
+	it("splits a short message when the cash adds up", () => {
+		// ৳30 by bKash + ৳10 cash for a ৳40 sale.
+		expect(
+			resolveSalePayment({ receivedMinor: 3000, totalMinor: 4000, cashMinor: 1000 }),
+		).toEqual({ mode: "split", cashMinor: 1000 });
+	});
+
+	it("splits a rounded-down bill", () => {
+		// Bill ৳257, owner collected ৳250, customer sent ৳200 by bKash and ৳50 cash.
+		expect(
+			resolveSalePayment({ receivedMinor: 20000, totalMinor: 25000, cashMinor: 5000 }),
+		).toEqual({ mode: "split", cashMinor: 5000 });
+	});
+
+	it("rejects a cash balance that does not add up", () => {
+		const result = resolveSalePayment({
+			receivedMinor: 3000,
+			totalMinor: 4000,
+			cashMinor: 500,
+		});
+		expect(result.mode).toBe("invalid");
+	});
+
+	it("rejects cash when the message already covers the bill", () => {
+		const result = resolveSalePayment({
+			receivedMinor: 4000,
+			totalMinor: 4000,
+			cashMinor: 1000,
+		});
+		expect(result.mode).toBe("invalid");
+	});
+
+	it("keeps a message from another sale separate", () => {
+		expect(resolveSalePayment({ receivedMinor: 50000, totalMinor: 40000 })).toEqual({
+			mode: "separate",
+		});
+	});
+
+	it("ignores an empty message", () => {
+		expect(resolveSalePayment({ receivedMinor: 0, totalMinor: 40000 })).toEqual({
+			mode: "separate",
+		});
 	});
 });

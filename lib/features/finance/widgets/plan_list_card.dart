@@ -34,33 +34,10 @@ class PlanListCard extends ConsumerWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(
-                      alpha: 0.6,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 18,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          data.message,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                NoticeBox(
+                  icon: Icons.info_outline_rounded,
+                  title: 'No match yet',
+                  message: data.message,
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -139,10 +116,18 @@ class _CapacityCard extends StatelessWidget {
     final Color accent = theme.colorScheme.primary;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            theme.colorScheme.primaryContainer.withValues(alpha: 0.62),
+            theme.colorScheme.surface,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.16)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,15 +168,20 @@ class _CapacityCard extends StatelessWidget {
               ),
             ),
           ] else ...<Widget>[
-            Text(
-              '${formatMinorCompact(capacity.suggestedAmountMinor)} '
-              'over ${capacity.tenorMonths} months',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: accent,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${formatMinorCompact(capacity.suggestedAmountMinor)} '
+                'over ${capacity.tenorMonths} months',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: accent,
+                  letterSpacing: -0.4,
+                ),
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             Text(
               'About ${formatMinorCompact(capacity.maxAffordableEmiMinor)} a '
               'month at ${capacity.interestRatePct.toStringAsFixed(2)}% p.a.',
@@ -372,88 +362,157 @@ class _MatchedPlanTile extends StatelessWidget {
     ];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  match.plan.planName,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
+        decoration: BoxDecoration(
+          color: priorityColor.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: priorityColor.withValues(alpha: 0.16)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        match.plan.planName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${match.plan.institutionName ?? 'Unknown provider'} · '
+                        'fit ${(match.fitScore * 100).toStringAsFixed(0)}%',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              StatusChip(
-                label: match.priority.label,
-                color: priorityColor,
-                dense: true,
+                const SizedBox(width: 8),
+                StatusChip(
+                  label: match.priority.label,
+                  color: priorityColor,
+                  dense: true,
+                ),
+              ],
+            ),
+            if (facts.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: facts
+                    .map(
+                      (String fact) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.55,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          fact,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
               ),
             ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${match.plan.institutionName ?? 'Unknown provider'} · '
-            'fit ${(match.fitScore * 100).toStringAsFixed(0)}%',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (facts.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 12,
-              runSpacing: 3,
-              children: facts
-                  .map(
-                    (String fact) => Text(
-                      fact,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
-            ),
-          ],
-          ...match.reasons
-              .take(3)
-              .map(
-                (String reason) => Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Text('• $reason', style: theme.textTheme.bodySmall),
-                ),
-              ),
-          if (match.requirements.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 4),
-            Text(
-              'Needs: ${match.requirements.take(2).join(' · ')}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 11,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          ...match.warnings
-              .take(2)
-              .map(
-                (String warning) => Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Text(
-                    warning,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
-                      color: theme.colorScheme.error,
+            ...match.reasons
+                .take(3)
+                .map(
+                  (String reason) => Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 5),
+                          child: Container(
+                            height: 4,
+                            width: 4,
+                            decoration: BoxDecoration(
+                              color: priorityColor.withValues(alpha: 0.7),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            reason,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 11.5,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+            if (match.requirements.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 7),
+              Text(
+                'Needs: ${match.requirements.take(2).join(' · ')}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-        ],
+            ],
+            ...match.warnings
+                .take(2)
+                .map(
+                  (String warning) => Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size: 13,
+                          color: theme.colorScheme.error,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            warning,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
+        ),
       ),
     );
   }

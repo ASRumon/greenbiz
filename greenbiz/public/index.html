@@ -2265,6 +2265,18 @@
 				const isIn = transaction.direction === "in";
 				const business = transaction.isBusiness !== false;
 				const method = methodText(transaction);
+				const bill = Number(transaction.subtotalMinor || 0);
+				const discount = Number(transaction.discountMinor || 0);
+				const saleTotal = bill > 0 ? bill - discount : Number(transaction.amountMinor);
+				const showBreakdown = bill > 0 && (discount > 0 || saleTotal !== Number(transaction.amountMinor));
+				const breakdown = showBreakdown
+					? '<div class="sub">Sale ' + esc(formatMinor(saleTotal, transaction.currency)) +
+					" · Bill " + esc(formatMinor(bill, transaction.currency)) +
+					(discount > 0 ? " · " + esc(formatMinor(discount, transaction.currency)) + " discount" : "") +
+					(saleTotal !== Number(transaction.amountMinor)
+						? " · Received " + esc(formatMinor(transaction.amountMinor, transaction.currency))
+						: "") + "</div>"
+					: "";
 
 				return (
 					'<div class="item">' +
@@ -2273,6 +2285,7 @@
 					'<div class="title">' + esc(counterpartyLabel(transaction)) + "</div>" +
 					'<div class="sub">' + esc(dateLabel(transaction.occurredAt)) + " · " + esc(method) +
 					(transaction.reference ? " · " + esc(transaction.reference) : "") + "</div>" +
+					breakdown +
 					'<div class="chips" style="margin-top: 6px">' +
 					'<span class="chip brand">' + (transaction.smsId ? "SMS" : "Manual") + "</span>" +
 					'<span class="chip ' + (business ? "good" : "warn") + '">' +

@@ -6,8 +6,8 @@ import { products, transactions } from "../db/schema";
 import type { AppBindings } from "../lib/context";
 import { currentUserId } from "../lib/context";
 import { AppError, badRequest, conflict, notFound } from "../lib/errors";
-import { isWithinPaymentTolerance } from "../lib/paymentTolerance";
-import { optionalText, paymentMethod, timestampMs, uuid } from "../lib/schemas";
+import { resolveSalePayment } from "../lib/paymentTolerance";
+import { minorUnits, optionalText, paymentMethod, timestampMs, uuid } from "../lib/schemas";
 import { parseJsonBody, parseParams } from "../lib/validate";
 import { requireAuth } from "../middleware/auth";
 import { recomputeCreditProfile } from "../services/creditScore";
@@ -55,6 +55,25 @@ const createSaleSchema = z.object({
 	/** SMS message id of the confirmation row. Merges instead of double-booking. */
 	smsId: uuid.optional(),
 	/**
+	 * Cash the customer handed over on top of a mobile-money message.
+	 *
+	 * Bangladesh shops routinely take part of a bill by bKash/Nagad and the rest
+	 * from the till. When this is set, the message row keeps its real amount and
+	 * a second cash row is booked, so the ledger adds up to the sale instead of
+	 * losing the cash (or counting the message twice).
+	 */
+	cashMinor: minorUnits.optional(),
+	/**
+	 * What the shopkeeper actually decided to collect.
+	 *
+	 * Shops round a bill down ("৳257, give me ৳250") or knock a few taka off
+	 * for a regular. The transaction records this amount, the difference from
+	 * the list-price bill is stored as a discount, and mobile-money matching
+	 * uses it too — so a ৳250 message is an exact match for the ৳250 collected,
+	 * not a ৳7 mismatch.
+	 */
+	payableMinor: minorUnits.optional(),
+	/**
 	 * A confirmation captured live on the phone. When the sale is retried after
 	 * an offline period the SMS may not have been uploaded yet, so the server
 	 * ingests it here and can still merge the two into one ledger row.
@@ -71,6 +90,16 @@ const createSaleSchema = z.object({
 /** "3" for 3.0, "2.5" for 2.50 — how a shopkeeper writes a quantity. */
 function quantityLabel(quantity: number): string {
 	return Number.isInteger(quantity) ? String(quantity) : String(Number(quantity.toFixed(2)));
+}
+
+/** `৳1,257` / `৳7.50` for the note, which the owner reads in Payments. */
+function moneyLabel(minor: number): string {
+	const whole = Math.floor(minor / 100);
+	const fraction = minor % 100;
+	const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+	return fraction === 0
+		? `৳${grouped}`
+		: `৳${grouped}.${String(fraction).padStart(2, "0")}`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -91,6 +120,12 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 	if (!smsId && input.liveSms) {
 		const ingested = await ingestSms(c.env, db, shopId, input.liveSms);
 		if (ingested.parseStatus === "parsed") smsId = ingested.smsId;
+	}
+
+	// A cash balance only makes sense next to a mobile-money message. Rejecting
+	// it is safer than booking a cash sale and silently dropping the split.
+	if (!smsId && (input.cashMinor ?? 0) > 0) {
+		throw badRequest("A cash balance needs a linked payment message");
 	}
 
 	// Merge duplicate lines first. Two entries for the same product must be
@@ -114,31 +149,51 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 	const byId = new Map(rows.map((row) => [row.id, row]));
 
 	// A retry must not decrement stock twice. The first successful attempt
-	// created the transaction with this id; return it as-is.
+	// created the ledger row(s) with this sale id; return them instead of
+	// writing again. A split payment has two rows (mobile money + cash), so the
+	// lookup must consider every row, not just the first.
 	if (input.id) {
-		const [existing] = await db
+		const existingRows = await db
 			.select()
 			.from(transactions)
-			.where(and(eq(transactions.saleId, input.id), eq(transactions.shopId, shopId)))
-			.limit(1);
-		if (existing) {
+			.where(and(eq(transactions.saleId, input.id), eq(transactions.shopId, shopId)));
+
+		if (existingRows.length > 0) {
+			const smsRow = existingRows.find((row) => row.smsId !== null);
+			const cashRow = smsRow ? existingRows.find((row) => row.smsId === null) : undefined;
+
+			const retrySubtotalMinor = [...wanted.entries()].reduce(
+				(sum, [productId, quantity]) =>
+					sum + Math.round((byId.get(productId)?.unitPriceMinor ?? 0) * quantity),
+				0,
+			);
+			const retryPayableMinor = Math.min(
+				input.payableMinor ?? retrySubtotalMinor,
+				retrySubtotalMinor,
+			);
+
 			return c.json({
-				transaction: existing,
-				totalMinor: existing.amountMinor,
-				currency: existing.currency,
-				items: input.items.map((item) => {
-					const product = byId.get(item.productId);
+				transaction: smsRow ?? existingRows[0],
+				cashTransaction: cashRow ?? null,
+				cashMinor: cashRow?.amountMinor ?? 0,
+				subtotalMinor: retrySubtotalMinor,
+				discountMinor: retrySubtotalMinor - retryPayableMinor,
+				totalMinor: retryPayableMinor,
+				currency: existingRows[0].currency,
+				items: [...wanted.entries()].map(([productId, quantity]) => {
+					const product = byId.get(productId);
 					return {
-						productId: item.productId,
+						productId,
 						productName: product?.productName ?? "Product",
 						unit: product?.unit ?? "unit",
-						quantity: item.quantity,
+						quantity,
 						unitPriceMinor: product?.unitPriceMinor ?? 0,
-						lineTotalMinor: Math.round((product?.unitPriceMinor ?? 0) * item.quantity),
+						lineTotalMinor: Math.round((product?.unitPriceMinor ?? 0) * quantity),
 						remainingStock: product?.stockQuantity ?? 0,
 					};
 				}),
 				score: null,
+				smsLinked: Boolean(smsRow),
 			});
 		}
 	}
@@ -149,7 +204,7 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 		remainingStock: number;
 	}> = [];
 	const insufficient: Array<Record<string, unknown>> = [];
-	let totalMinor = 0;
+	let subtotalMinor = 0;
 
 	for (const [productId, quantity] of wanted) {
 		const product = byId.get(productId);
@@ -168,7 +223,7 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 		}
 
 		const lineTotalMinor = Math.round(product.unitPriceMinor * quantity);
-		totalMinor += lineTotalMinor;
+		subtotalMinor += lineTotalMinor;
 		lines.push({
 			product,
 			quantity,
@@ -185,9 +240,29 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 	const now = Date.now();
 	const currency = await resolveShopCurrency(db, shopId);
 
+	// The bill is what the catalogue says the goods cost. `payableMinor` is
+	// what the shopkeeper decided to collect after a round-off or a small
+	// discount ("the bill is ৳257, give me ৳250"). Never collect more than the
+	// bill: an over-charge with no matching line would make the ledger lie.
+	if (input.payableMinor !== undefined && input.payableMinor > subtotalMinor) {
+		throw badRequest(
+			`The amount to collect cannot be more than the bill (${subtotalMinor} minor units)`,
+			{ subtotalMinor, payableMinor: input.payableMinor },
+		);
+	}
+	const payableMinor = input.payableMinor ?? subtotalMinor;
+	const discountMinor = subtotalMinor - payableMinor;
+
 	const summary = lines
 		.map((line) => `${quantityLabel(line.quantity)} ${line.product.unit} ${line.product.productName}`)
 		.join(", ");
+
+	// Keep the discount visible in the ledger row, not only in the receipt the
+	// customer saw. This is the note the owner reads in Payments.
+	const saleNote = (input.note ?? `Sale: ${summary}${discountMinor > 0 ? ` · ${moneyLabel(discountMinor)} discount` : ""}`).slice(
+		0,
+		240,
+	);
 
 	const saleItems = lines.map((line) => ({
 		productId: line.product.id,
@@ -214,6 +289,10 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 	// Mobile money rarely lands on the exact total: the customer adds the
 	// cash-out charge (about 10-20 taka per thousand), or the shop absorbs it. A
 	// message inside that band still pays for this sale.
+	//
+	// A short message plus a cash balance is the classic "part bKash, part
+	// hand" payment. The message row keeps its real amount and a second cash row
+	// is booked for the rest, so the two add up to `payableMinor`.
 	if (smsId) {
 		const [smsPayment] = await db
 			.select()
@@ -221,61 +300,110 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 			.where(and(eq(transactions.shopId, shopId), eq(transactions.smsId, smsId)))
 			.limit(1);
 
-		if (smsPayment && isWithinPaymentTolerance(smsPayment.amountMinor, totalMinor)) {
+		if (!smsPayment && (input.cashMinor ?? 0) > 0) {
+			throw badRequest("A cash balance needs a linked payment message");
+		}
+
+		if (smsPayment) {
 			// A payment message can back exactly one sale. Re-linking it would
 			// decrement stock for money that is already accounted for.
 			if (smsPayment.saleId && smsPayment.saleId !== input.id) {
 				throw conflict("That payment message is already linked to another sale");
 			}
 
-			const mergedTransaction = {
-				...smsPayment,
-				// The client sale id is the retry key; the row keeps its own id.
-				saleId: input.id ?? null,
-				paymentMethod: input.paymentMethod ?? smsPayment.paymentMethod ?? "cash",
-				reference: input.reference ?? smsPayment.reference,
-				counterparty: input.counterparty ?? smsPayment.counterparty,
-				note: input.note ?? `Sale: ${summary}`.slice(0, 240),
-			};
+			const resolution = resolveSalePayment({
+				receivedMinor: smsPayment.amountMinor,
+				totalMinor: payableMinor,
+				cashMinor: input.cashMinor,
+			});
 
-			const link = db
-				.update(transactions)
-				.set({
-					saleId: mergedTransaction.saleId,
-					paymentMethod: mergedTransaction.paymentMethod,
-					reference: mergedTransaction.reference,
-					counterparty: mergedTransaction.counterparty,
-					note: mergedTransaction.note,
-				})
-				.where(eq(transactions.id, smsPayment.id));
-
-			const statements: BatchItem<"sqlite">[] = [...stockUpdates(), link];
-			const [first, ...rest] = statements;
-			if (!first) throw new AppError("INTERNAL", "Sale could not be saved");
-
-			await db.batch([first, ...rest] as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
-
-			let mergedScore: number | null = null;
-			try {
-				mergedScore = (await recomputeCreditProfile(db, shopId)).score;
-			} catch (error) {
-				console.error(
-					"Credit recompute after linked sale failed:",
-					error instanceof Error ? error.message : error,
-				);
+			if (resolution.mode === "invalid") {
+				throw badRequest(resolution.message);
 			}
 
-			return c.json(
-				{
-					transaction: mergedTransaction,
-					totalMinor,
-					currency: smsPayment.currency,
-					items: saleItems,
-					score: mergedScore,
-					smsLinked: true,
-				},
-				200,
-			);
+			if (resolution.mode === "merge" || resolution.mode === "split") {
+				const mergedTransaction = {
+					...smsPayment,
+					// The client sale id is the retry key; the row keeps its own id.
+					saleId: input.id ?? null,
+					paymentMethod: input.paymentMethod ?? smsPayment.paymentMethod ?? "cash",
+					reference: input.reference ?? smsPayment.reference,
+					counterparty: input.counterparty ?? smsPayment.counterparty,
+					note: saleNote,
+					subtotalMinor,
+					discountMinor,
+				};
+
+				const link = db
+					.update(transactions)
+					.set({
+						saleId: mergedTransaction.saleId,
+						paymentMethod: mergedTransaction.paymentMethod,
+						reference: mergedTransaction.reference,
+						counterparty: mergedTransaction.counterparty,
+						note: mergedTransaction.note,
+						subtotalMinor: mergedTransaction.subtotalMinor,
+						discountMinor: mergedTransaction.discountMinor,
+					})
+					.where(eq(transactions.id, smsPayment.id));
+
+				const statements: BatchItem<"sqlite">[] = [...stockUpdates(), link];
+
+				let cashTransaction: typeof transactions.$inferSelect | null = null;
+				if (resolution.mode === "split") {
+					cashTransaction = {
+						id: crypto.randomUUID(),
+						shopId,
+						smsId: null,
+						direction: "in" as const,
+						amountMinor: resolution.cashMinor,
+						currency,
+						counterparty:
+							input.counterparty ?? smsPayment.counterparty ?? "Walk-in customer",
+						reference: null,
+						occurredAt: input.occurredAt ?? now,
+						note: `Cash balance: ${summary}`.slice(0, 240),
+						isBusiness: true,
+						paymentMethod: "cash",
+						saleId: input.id ?? null,
+						subtotalMinor: 0,
+						discountMinor: 0,
+						createdAt: now,
+					};
+					statements.push(db.insert(transactions).values(cashTransaction));
+				}
+
+				const [first, ...rest] = statements;
+				if (!first) throw new AppError("INTERNAL", "Sale could not be saved");
+
+				await db.batch([first, ...rest] as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+
+				let mergedScore: number | null = null;
+				try {
+					mergedScore = (await recomputeCreditProfile(db, shopId)).score;
+				} catch (error) {
+					console.error(
+						"Credit recompute after linked sale failed:",
+						error instanceof Error ? error.message : error,
+					);
+				}
+
+				return c.json(
+					{
+						transaction: mergedTransaction,
+						cashTransaction,
+						cashMinor: resolution.mode === "split" ? resolution.cashMinor : 0,
+						subtotalMinor,
+						discountMinor,
+						totalMinor: payableMinor,
+						currency: smsPayment.currency,
+						items: saleItems,
+						score: mergedScore,
+						smsLinked: true,
+					},
+					200,
+				);
+			}
 		}
 	}
 
@@ -285,15 +413,17 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 		smsId: null,
 		// Selling goods brings money in.
 		direction: "in" as const,
-		amountMinor: totalMinor,
+		amountMinor: payableMinor,
 		currency,
 		counterparty: input.counterparty ?? "Walk-in customer",
 		reference: input.reference ?? null,
 		occurredAt: input.occurredAt ?? now,
-		note: input.note ?? `Sale: ${summary}`.slice(0, 240),
+		note: saleNote,
 		isBusiness: true,
 		paymentMethod: input.paymentMethod ?? "cash",
 		saleId: input.id ?? null,
+		subtotalMinor,
+		discountMinor,
 		createdAt: now,
 	};
 
@@ -322,7 +452,9 @@ saleRoutes.post("/shops/:shopId/sales", requireAuth, async (c) => {
 	return c.json(
 		{
 			transaction,
-			totalMinor,
+			subtotalMinor,
+			discountMinor,
+			totalMinor: payableMinor,
 			currency,
 			items: saleItems,
 			score,

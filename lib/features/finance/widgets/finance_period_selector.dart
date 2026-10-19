@@ -25,25 +25,30 @@ class FinancePeriodSelector extends ConsumerWidget {
       financePeriodProvider.notifier,
     );
 
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: <Widget>[
-        for (final ({FinancePreset preset, String label}) option in _options)
-          ChoiceChip(
-            label: Text(option.label),
-            selected: period.preset == option.preset,
-            onSelected: (_) => controller.selectPreset(option.preset),
+    // One scrolling line instead of a chip cloud: the row never grows to three
+    // wrapped lines, so the summary below it keeps its place on screen.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.none,
+      child: Row(
+        children: <Widget>[
+          for (final ({FinancePreset preset, String label}) option in _options)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: _PeriodPill(
+                label: option.label,
+                selected: period.preset == option.preset,
+                onTap: () => controller.selectPreset(option.preset),
+              ),
+            ),
+          _PeriodPill(
+            label: period.isCustomMonth ? period.label : 'Pick a month',
+            icon: Icons.calendar_month_outlined,
+            selected: period.isCustomMonth,
+            onTap: () => _pickMonth(context, ref),
           ),
-        ActionChip(
-          avatar: const Icon(Icons.calendar_month_outlined, size: 16),
-          label: Text(period.isCustomMonth ? period.label : 'Pick a month'),
-          onPressed: () => _pickMonth(context, ref),
-          backgroundColor: period.isCustomMonth
-              ? Theme.of(context).colorScheme.secondaryContainer
-              : null,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -86,5 +91,61 @@ class FinancePeriodSelector extends ConsumerWidget {
 
     if (picked == null) return;
     ref.read(financePeriodProvider.notifier).selectMonth(picked);
+  }
+}
+
+/// A single segmented pill. Filled when selected, quiet when not, so the
+/// active range reads instantly without a ripple of outlined chips.
+class _PeriodPill extends StatelessWidget {
+  const _PeriodPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color background = selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.55);
+    final Color foreground = selected
+        ? theme.colorScheme.onPrimary
+        : theme.colorScheme.onSurfaceVariant;
+
+    return Material(
+      color: background,
+      shape: const StadiumBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (icon != null) ...<Widget>[
+                Icon(icon, size: 14, color: foreground),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: foreground,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

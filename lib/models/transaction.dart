@@ -17,6 +17,8 @@ class Transaction {
     this.createdAt,
     this.isBusiness = true,
     this.paymentMethod,
+    this.subtotalMinor = 0,
+    this.discountMinor = 0,
     this.smsSender,
     this.smsBody,
     this.syncState = 0,
@@ -38,6 +40,8 @@ class Transaction {
     createdAt: asDateTime(json['createdAt']),
     isBusiness: _asBool(json['isBusiness']),
     paymentMethod: asString(json['paymentMethod']),
+    subtotalMinor: asInt(json['subtotalMinor']),
+    discountMinor: asInt(json['discountMinor']),
     smsSender: asString(json['smsSender']),
     smsBody: asString(json['smsBody']),
   );
@@ -77,6 +81,44 @@ class Transaction {
   /// cash | bkash | nagad | rocket | upay | upi | other. Null on legacy/imported rows.
   final String? paymentMethod;
 
+  /// The list-price bill before a round-off/discount. Zero on rows that are
+  /// not sales and on the cash half of a split sale.
+  final int subtotalMinor;
+
+  /// How much the shopkeeper knocked off [subtotalMinor] (round-off or a small
+  /// discount), in Taka. Zero for ordinary rows.
+  final int discountMinor;
+
+  /// True when this row carries a sale's bill/discount breakdown.
+  bool get hasSaleBreakdown => subtotalMinor > 0;
+
+  /// What the customer was actually asked to pay for the sale: the bill minus
+  /// the discount. Falls back to the money moved for non-sale rows.
+  int get saleTotalMinor =>
+      subtotalMinor > 0 ? subtotalMinor - discountMinor : amountMinor;
+
+  /// True when the mobile-money message differs from the sale total (usually a
+  /// cash-out charge or the cash half of a split payment).
+  bool get amountDiffersFromSale =>
+      hasSaleBreakdown && amountMinor != saleTotalMinor;
+
+  /// "Sale ৳250.00 · Bill ৳257.00 · ৳7.00 discount · Received ৳250.00"
+  ///
+  /// Starts with the discounted sale amount and keeps the discount in Taka.
+  String get saleBreakdownLabel {
+    final String sale =
+        'Sale ${formatMinor(saleTotalMinor, currency: currency)}';
+    final String bill =
+        'Bill ${formatMinor(subtotalMinor, currency: currency)}';
+    final String discount = discountMinor > 0
+        ? ' · ${formatMinor(discountMinor, currency: currency)} discount'
+        : '';
+    final String received = amountDiffersFromSale
+        ? ' · Received ${formatMinor(amountMinor, currency: currency)}'
+        : '';
+    return '$sale · $bill$discount$received';
+  }
+
   /// Sender and raw text of the confirmation this row came from, when the
   /// server has them. Null for manual rows, and for rows cached before the SMS
   /// body was added to the transaction payload.
@@ -110,6 +152,8 @@ class Transaction {
     String? note,
     bool? isBusiness,
     String? paymentMethod,
+    int? subtotalMinor,
+    int? discountMinor,
     int? syncState,
   }) => Transaction(
     id: id,
@@ -125,6 +169,8 @@ class Transaction {
     createdAt: createdAt,
     isBusiness: isBusiness ?? this.isBusiness,
     paymentMethod: paymentMethod ?? this.paymentMethod,
+    subtotalMinor: subtotalMinor ?? this.subtotalMinor,
+    discountMinor: discountMinor ?? this.discountMinor,
     smsSender: smsSender,
     smsBody: smsBody,
     syncState: syncState ?? this.syncState,

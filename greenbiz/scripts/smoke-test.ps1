@@ -309,6 +309,98 @@ Assert "transaction count reflects the 90-day window" ($profile.transactionCount
 $recomputed = Invoke-Api -Method POST -Path "/api/shops/$shopId/credit/recompute" -Token $token
 Assert "recompute is deterministic" ($recomputed.creditProfile.score -eq $profile.score) "score changed between calls"
 
+# ------------------------------------- split payment + rounded bill ---------
+# A bill the shopkeeper rounds down, and a bill paid part bKash / part cash.
+Write-Host "sales (split payment and rounded bill)"
+
+$onion = Invoke-Api -Method POST -Path "/api/shops/$shopId/products" -Token $token -Body @{
+    productName    = "Onion"
+    unit           = "kg"
+    unitPriceMinor = 25700
+    stockQuantity  = 10
+}
+$onionId = $onion.product.id
+
+$roundReceivedAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+Invoke-Api -Method POST -Path "/api/shops/$shopId/sms/bulk" -Token $token -Body @{
+    messages = @(@{
+            sender     = "16247"
+            body       = "You have received Tk 250.00 from 01711111111. TrxID ROUND250A at 19/10/2026 10:00"
+            receivedAt = $roundReceivedAt
+        })
+} | Out-Null
+
+$afterRoundSms = Invoke-Api -Method GET -Path "/api/shops/$shopId/transactions" -Token $token
+$roundTx = $afterRoundSms.transactions |
+Where-Object { $_.amountMinor -eq 25000 -and $_.direction -eq "in" } |
+Select-Object -First 1
+
+$rounded = Invoke-Api -Method POST -Path "/api/shops/$shopId/sales" -Token $token -Body @{
+    items         = @(@{ productId = $onionId; quantity = 1 })
+    paymentMethod = "bkash"
+    smsId         = $roundTx.smsId
+    payableMinor  = 25000
+}
+Assert "a rounded bill reports the catalogue bill" ($rounded.subtotalMinor -eq 25700) "subtotal=$($rounded.subtotalMinor)"
+Assert "a rounded bill reports the discount" ($rounded.discountMinor -eq 700) "discount=$($rounded.discountMinor)"
+Assert "the collected amount is the rounded total" ($rounded.totalMinor -eq 25000) "total=$($rounded.totalMinor)"
+Assert "a 250 SMS matches the 250 rounded total" ($rounded.smsLinked -eq $true) "smsLinked=$($rounded.smsLinked)"
+Assert "the ledger row carries the discount" ($rounded.transaction.discountMinor -eq 700) "row=$($rounded.transaction.discountMinor)"
+Assert "the ledger row carries the bill" ($rounded.transaction.subtotalMinor -eq 25700) "row=$($rounded.transaction.subtotalMinor)"
+Assert "the rounded row is the SMS row" ($rounded.transaction.id -eq $roundTx.id) "id changed"
+Assert "the cash row is absent on a rounded sale" ($null -eq $rounded.cashTransaction) "unexpected cash row"
+
+# Part bKash, part cash: ৳30 received + ৳10 handed over for a ৳40 sale.
+$rice = Invoke-Api -Method POST -Path "/api/shops/$shopId/products" -Token $token -Body @{
+    productName    = "Rice"
+    unit           = "kg"
+    unitPriceMinor = 4000
+    stockQuantity  = 10
+}
+$riceId = $rice.product.id
+
+$splitReceivedAt = $roundReceivedAt + 1000
+Invoke-Api -Method POST -Path "/api/shops/$shopId/sms/bulk" -Token $token -Body @{
+    messages = @(@{
+            sender     = "16247"
+            body       = "You have received Tk 30.00 from 01722222222. TrxID SPLIT30A at 19/10/2026 10:05"
+            receivedAt = $splitReceivedAt
+        })
+} | Out-Null
+
+$afterSplitSms = Invoke-Api -Method GET -Path "/api/shops/$shopId/transactions" -Token $token
+$splitTx = $afterSplitSms.transactions |
+Where-Object { $_.amountMinor -eq 3000 -and $_.direction -eq "in" } |
+Select-Object -First 1
+
+$saleId = [guid]::NewGuid().ToString()
+$splitBody = @{
+    id            = $saleId
+    items         = @(@{ productId = $riceId; quantity = 1 })
+    paymentMethod = "bkash"
+    smsId         = $splitTx.smsId
+    payableMinor  = 4000
+    cashMinor     = 1000
+}
+$split = Invoke-Api -Method POST -Path "/api/shops/$shopId/sales" -Token $token -Body $splitBody
+Assert "a short message plus cash links to the sale" ($split.smsLinked -eq $true) "smsLinked=$($split.smsLinked)"
+Assert "the split books the cash balance" ($split.cashMinor -eq 1000) "cash=$($split.cashMinor)"
+Assert "the cash row has the cash amount" ($split.cashTransaction.amountMinor -eq 1000) "row=$($split.cashTransaction.amountMinor)"
+Assert "the two parts add up to the sale total" (($split.transaction.amountMinor + $split.cashMinor) -eq 4000) "parts did not add up"
+Assert "cash is recorded as the cash method" ($split.cashTransaction.paymentMethod -eq "cash") "method=$($split.cashTransaction.paymentMethod)"
+Assert "the split ledger row carries the bill" ($split.transaction.subtotalMinor -eq 4000) "row=$($split.transaction.subtotalMinor)"
+
+$splitRows = (Invoke-Api -Method GET -Path "/api/shops/$shopId/transactions" -Token $token).transactions |
+Where-Object { $_.saleId -eq $saleId }
+Assert "a split sale writes exactly two ledger rows" ($splitRows.Count -eq 2) "count=$($splitRows.Count)"
+
+$splitRetry = Invoke-Api -Method POST -Path "/api/shops/$shopId/sales" -Token $token -Body $splitBody
+Assert "retrying a split sale returns the same cash balance" ($splitRetry.cashMinor -eq 1000) "cash=$($splitRetry.cashMinor)"
+
+$riceStock = ((Invoke-Api -Method GET -Path "/api/shops/$shopId/products" -Token $token).products |
+    Where-Object { $_.id -eq $riceId }).stockQuantity
+Assert "retrying a split sale does not take stock twice" ($riceStock -eq 9) "stock=$riceStock"
+
 # -------------------------------------------------------- loan matching ------
 Write-Host "plan matching"
 $matched = Invoke-Api -Method GET -Path "/api/shops/$shopId/matched-plans" -Token $token
